@@ -28,42 +28,6 @@ type IAccountFeature interface {
 }
 
 type (
-	CreditWalletResponse struct {
-		AmountTransfered decimal.Decimal
-		Fee              decimal.Decimal
-		Wallet           Wallet
-		Transaction      Transaction
-	}
-
-	DebitWalletResponse struct {
-		AmountTransfered decimal.Decimal
-		Fee              decimal.Decimal
-		Wallet           Wallet
-		Transaction      Transaction
-	}
-
-	SwapWalletResponse struct {
-		FromWallet      Wallet
-		ToWallet        Wallet
-		FromTransaction Transaction
-		ToTransaction   Transaction
-	}
-
-	TransferResponse struct {
-		AmountTransfered decimal.Decimal
-		Fee              decimal.Decimal
-		FromWallet       Wallet
-		ToWallet         Wallet
-		FromTransaction  Transaction
-		ToTransaction    Transaction
-	}
-
-	ReverseResponse struct {
-		OldUpdatedTx  *Transaction
-		NewTx         *Transaction
-		UpdatedWallet *Wallet
-	}
-
 	// CreditWalletParams defines parameters for crediting a wallet.
 	CreditWalletParams struct {
 		WalletID        string
@@ -71,6 +35,13 @@ type (
 		Fee             decimal.Decimal
 		Type            TransactionType
 		SourceNarration string
+	}
+
+	CreditWalletResponse struct {
+		AmountTransfered decimal.Decimal
+		Fee              decimal.Decimal
+		Wallet           Wallet
+		Transaction      Transaction
 	}
 
 	// DebitWalletParams defines parameters for debiting a wallet.
@@ -82,6 +53,13 @@ type (
 		SourceNarration string
 	}
 
+	DebitWalletResponse struct {
+		AmountTransfered decimal.Decimal
+		Fee              decimal.Decimal
+		Wallet           Wallet
+		Transaction      Transaction
+	}
+
 	// TransferParams defines parameters for transferring funds between wallets.
 	TransferRequestParams struct {
 		FromWalletID    string          `json:"fromWid"`
@@ -91,9 +69,24 @@ type (
 		SourceNarration string
 	}
 
+	TransferResponse struct {
+		AmountTransfered decimal.Decimal
+		Fee              decimal.Decimal
+		FromWallet       Wallet
+		ToWallet         Wallet
+		FromTransaction  Transaction
+		ToTransaction    Transaction
+	}
+
 	// ReverseParams defines parameters for reversing a transaction.
 	ReverseRequestParams struct {
 		TransactionID string `json:"transactionId"`
+	}
+
+	ReverseResponse struct {
+		OldUpdatedTx  *Transaction
+		NewTx         *Transaction
+		UpdatedWallet *Wallet
 	}
 
 	// SwapParams defines parameters for swapping currencies between wallets.
@@ -103,6 +96,13 @@ type (
 		ToCurrencyCode   string
 		Amount           decimal.Decimal
 		Fee              decimal.Decimal
+	}
+
+	SwapWalletResponse struct {
+		FromWallet      Wallet
+		ToWallet        Wallet
+		FromTransaction Transaction
+		ToTransaction   Transaction
 	}
 
 	ListWalletsFilterParams struct {

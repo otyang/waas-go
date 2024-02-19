@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/otyang/waas-go"
+	"github.com/uptrace/bun"
 )
 
 type IAccountFeature interface {
@@ -24,4 +25,26 @@ type IAccountFeature interface {
 	Swap(ctx context.Context, params waas.SwapRequestParams) (*waas.SwapWalletResponse, error)
 	Transfer(ctx context.Context, params waas.TransferRequestParams) (*waas.TransferResponse, error)
 	Reverse(ctx context.Context, transactionID string) (*waas.ReverseResponse, error)
+}
+
+type Account struct {
+	db *bun.IDB
+}
+
+func New(db *bun.DB) (Account, error)
+
+func (a *Account) CreateWallet(ctx context.Context, wallet *waas.Wallet) (*waas.Wallet, error) {
+	return nil, nil
+}
+
+func (a *Account) GetWalletByID(ctx context.Context, walletID string) (*waas.Wallet, error) {
+	return nil, nil
+}
+
+func (a *Account) GetWalletByUserIDAndCurrencyCode(ctx context.Context, userID, currencyCode string) (*waas.Wallet, error) {
+	return nil, nil
+}
+
+func (a *Account) UpdateWallet(ctx context.Context, wallet *waas.Wallet) (*waas.Wallet, error) {
+	return nil, nil
 }
