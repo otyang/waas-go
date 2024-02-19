@@ -142,7 +142,7 @@ func (w *Wallet) TransferTo(toWallet *Wallet, amount, fee decimal.Decimal) error
 	}
 
 	// ensure we not transferring to same owner/wallet
-	if (w.ID == toWallet.ID) || (w.CustomerID == toWallet.CustomerID) {
+	if w.ID == toWallet.ID /*|| (w.CustomerID == toWallet.CustomerID) */ {
 		return ErrWalletInvalidTransferSameOwner
 	}
 
