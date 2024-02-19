@@ -8,18 +8,18 @@ import (
 )
 
 // Defines a new error type for common errors encountered in the wallet module.
-type OperationError struct{ error }
+type WaasError struct{ error }
 
-func NewOperationError(msg string) error { return &OperationError{errors.New(msg)} }
+func NewWaasError(msg string) error { return &WaasError{errors.New(msg)} }
 
-// IsOperationError checks if an error is of type OperationError.
-func IsOperationError(err error) bool {
-	_, ok := err.(*OperationError)
+// IsWaasError checks if an error is of type WaasError.
+func IsWaasError(err error) bool {
+	_, ok := err.(*WaasError)
 	return ok
 }
 
 func NewTransactionID() string {
-	return time.Now().UTC().Format("20060102") + GenerateID(6)
+	return time.Now().UTC().Format("20060102") + "_" + GenerateID(6)
 }
 
 func GenerateID(size int) string {
@@ -32,17 +32,17 @@ type (
 )
 
 const (
-	TransactionTypeSwap       TransactionType = "swap"
-	TransactionTypeTransfer   TransactionType = "transfer"
-	TransactionTypeDeposit    TransactionType = "deposit"
-	TransactionTypeWithdrawal TransactionType = "withdrawal"
+	TransactionTypeSwap       TransactionType = "SWAP"
+	TransactionTypeTransfer   TransactionType = "TRANSFER"
+	TransactionTypeDeposit    TransactionType = "DEPOSIT"
+	TransactionTypeWithdrawal TransactionType = "WITHDRAWAL"
 )
 
 const (
-	TransactionStatusNew     TransactionStatus = "new"
-	TransactionStatusPending TransactionStatus = "pending"
-	TransactionStatusFailed  TransactionStatus = "failed"
-	TransactionStatusSuccess TransactionStatus = "success"
+	TransactionStatusNew     TransactionStatus = "NEW"
+	TransactionStatusPending TransactionStatus = "PENDING"
+	TransactionStatusFailed  TransactionStatus = "FAILED"
+	TransactionStatusSuccess TransactionStatus = "SUCCESS"
 )
 
 func (t TransactionType) IsValid() error {

@@ -10,13 +10,13 @@ import (
 )
 
 var (
-	ErrWalletFrozen                   = NewOperationError("account frozen")
-	ErrWalletInsufficientBalance      = NewOperationError("insufficient balance")
-	ErrWalletInvalidAmount            = NewOperationError("invalid amount: cannot be zero or negative")
-	ErrWalletInvalidTransferSameOwner = NewOperationError("cannot transfer funds to the same owner or wallet")
-	ErrWalletInvalid                  = NewOperationError("invalid wallet")
-	ErrWalletSameCurrencySwap         = NewOperationError("cannot swap between the same currency")
-	ErrWalletSwapSameOwnerRequired    = NewOperationError("cannot swap to another person account")
+	ErrWalletFrozen                   = NewWaasError("account frozen")
+	ErrWalletInsufficientBalance      = NewWaasError("insufficient balance")
+	ErrWalletInvalidAmount            = NewWaasError("invalid amount: cannot be zero or negative")
+	ErrWalletInvalidTransferSameOwner = NewWaasError("cannot transfer funds to the same owner or wallet")
+	ErrWalletInvalid                  = NewWaasError("invalid wallet")
+	ErrWalletSameCurrencySwap         = NewWaasError("cannot swap between the same currency")
+	ErrWalletSwapSameOwnerRequired    = NewWaasError("cannot swap to another person account")
 )
 
 // GenerateWalletID generates a wallet ID

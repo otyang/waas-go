@@ -17,7 +17,7 @@ func TestNewTransactionID(t *testing.T) {
 	}{
 		{
 			name: "Should generate a valid transaction ID",
-			want: `^\d{8}_\d{6}_\d{6}_\w{5}`,
+			want: `^\d{8}_\w{6}`,
 		},
 	}
 
@@ -31,14 +31,14 @@ func TestNewTransactionID(t *testing.T) {
 	}
 }
 
-func TestNewOperationError(t *testing.T) {
+func TestNewWaasError(t *testing.T) {
 	t.Parallel()
 
-	err := NewOperationError("failed to transfer funds")
+	err := NewWaasError("failed to transfer funds")
 
-	// Check if the returned error is of type OperationError
-	if !IsOperationError(err) {
-		t.Errorf("NewOperationError should return an OperationError")
+	// Check if the returned error is of type WaasError
+	if !IsWaasError(err) {
+		t.Errorf("NewWaasError should return an WaasError")
 	}
 
 	// Check the underlying error message
@@ -47,19 +47,19 @@ func TestNewOperationError(t *testing.T) {
 	}
 }
 
-func TestIsOperationError(t *testing.T) {
+func TestIsWaasError(t *testing.T) {
 	t.Parallel()
 
-	opErr := NewOperationError("operation failed")
+	opErr := NewWaasError("operation failed")
 	otherErr := errors.New("some other error")
 
-	// Check if IsOperationError correctly identifies OperationError
-	if !IsOperationError(opErr) {
-		t.Errorf("IsOperationError should return true for OperationError")
+	// Check if IsWaasError correctly identifies WaasError
+	if !IsWaasError(opErr) {
+		t.Errorf("IsWaasError should return true for WaasError")
 	}
 
-	// Check if IsOperationError correctly handles other error types
-	if IsOperationError(otherErr) {
-		t.Errorf("IsOperationError should return false for non-OperationError errors")
+	// Check if IsWaasError correctly handles other error types
+	if IsWaasError(otherErr) {
+		t.Errorf("IsWaasError should return false for non-WaasError errors")
 	}
 }
