@@ -32,7 +32,11 @@ type TransferResponse struct {
 	ToTransaction    Transaction
 }
 
-type ReverseResponse struct{}
+type ReverseResponse struct {
+	OldUpdatedTx  *Transaction
+	NewTx         *Transaction
+	UpdatedWallet *Wallet
+}
 
 // CreditWalletParams defines parameters for crediting a wallet.
 type CreditWalletParams struct {

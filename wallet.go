@@ -34,7 +34,7 @@ func GenerateWalletID(currencyCode, userID string) string {
 //   - IsFiat indicates whether the currency is a fiat currency (e.g., USD, EUR) or not.
 //   - CreatedAt represents the timestamp when the wallet was created.
 //   - UpdatedAt represents the timestamp of the last update to the wallet.
-//   - IdempotencyID is a unique identifier used to ensure that the same operation is not performed multiple times.
+//   - VersionID is a unique identifier used to ensure that the same operation is not performed multiple times.
 type Wallet struct {
 	bun.BaseModel    `bun:"table:wallets"`
 	mutex            sync.Mutex      `bun:"-"`
@@ -46,7 +46,7 @@ type Wallet struct {
 	IsFiat           bool            `json:"isFiat" bun:",notnull"`
 	CreatedAt        time.Time       `json:"createdAt" bun:",notnull"`
 	UpdatedAt        time.Time       `json:"updatedAt" bun:",notnull"`
-	IdempotencyID    string          `json:"idempotencyId" bun:",notnull"`
+	VersionID        string          `json:"versionID" bun:",notnull"`
 }
 
 // NewWallet creates a new Wallet instance.
@@ -61,7 +61,7 @@ func NewWallet(customerID, currencyCode string, isFiat bool) *Wallet {
 		IsFiat:           isFiat,
 		CreatedAt:        time.Now(),
 		UpdatedAt:        time.Now(),
-		IdempotencyID:    GenerateID(7),
+		VersionID:        GenerateID(7),
 	}
 }
 

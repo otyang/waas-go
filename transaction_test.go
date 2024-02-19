@@ -57,7 +57,7 @@ func TestTransaction_Reverse(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, _, _, err := tt.tx.Reverse(tt.wallet)
+			_, err := tt.tx.Reverse(tt.wallet)
 
 			assert.Equal(t, tt.wantError, err)
 			assert.Equal(t, tt.wantErr, (err != nil))

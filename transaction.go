@@ -66,47 +66,48 @@ func (t *Transaction) CanBeReversed() error {
 	return nil
 }
 
-func (t *Transaction) Reverse(w *Wallet) (oldUpdatedTx, newTx *Transaction, updatedWallet *Wallet, err error) {
+func (t *Transaction) Reverse(wallet *Wallet) (*ReverseResponse, error) {
 	// t.mutex.Lock()
 	// defer t.mutex.Unlock()
 
 	if err := t.CanBeReversed(); err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
 
 	if t.IsDebit {
-		if err := w.CreditBalance(t.Amount, t.Fee); err != nil {
-			return nil, nil, nil, err
+		if err := wallet.CreditBalance(t.Amount, t.Fee); err != nil {
+			return nil, err
 		}
 
 		t.Reversed = true
 		t.Status = TransactionStatusFailed
 	} else {
-		if err := w.DebitBalance(t.Amount, t.Fee); err != nil {
-			return nil, nil, nil, err
+		if err := wallet.DebitBalance(t.Amount, t.Fee); err != nil {
+			return nil, err
 		}
 
 		t.Reversed = true
 		t.Status = TransactionStatusFailed
 	}
 
-	newTx, err = newTransactionEntry(w, !t.IsDebit, t.Amount, t.Fee, t.Type, TransactionStatusSuccess)
-	{
-		if err != nil {
-			return nil, nil, nil, err
-		}
-
-		newTx.Reversed = true
+	newEntry, err := NewTransactionEntry(wallet, !t.IsDebit, t.Amount, t.Fee, t.Type, TransactionStatusSuccess)
+	if err != nil {
+		return nil, err
 	}
 
-	t.SetCounterpartyID(newTx.ID)
-	newTx.SetCounterpartyID(t.ID)
+	newEntry.Reversed = true
+	newEntry.SetCounterpartyID(t.ID)
+	t.SetCounterpartyID(newEntry.ID)
 
-	return t, newTx, w, nil
+	return &ReverseResponse{
+		OldUpdatedTx:  t,
+		NewTx:         newEntry,
+		UpdatedWallet: wallet,
+	}, nil
 }
 
 // newTransactionEntry creates a new transaction entry.
-func newTransactionEntry(
+func NewTransactionEntry(
 	wallet *Wallet,
 	forCredit bool,
 	amount decimal.Decimal,
@@ -135,7 +136,7 @@ func newTransactionEntry(
 		IsDebit:        !forCredit,
 		Amount:         amount,
 		Fee:            fee,
-		TotalAmount:    amount.Add(fee),
+		TotalAmount:    amount.Add(fee), // ==='
 		BalanceAfter:   wallet.AvailableBalance,
 		Type:           txnType,
 		Status:         txnStatus,
@@ -149,27 +150,29 @@ func newTransactionEntry(
 }
 
 // Creates a new credit transaction entry.
-// func NewTransactionForCreditEntry(wallet *Wallet, amount decimal.Decimal, fee decimal.Decimal, txnType TransactionType,
-// ) (*Transaction, error) {
-// 	return newTransactionEntry(wallet, true, amount, fee, txnType, TransactionStatusSuccess)
-// }
+func NewTransactionForCreditEntry(wallet *Wallet, amount, fee decimal.Decimal, txnType TransactionType) (*Transaction, error) {
+	return NewTransactionEntry(wallet, true, amount, fee, txnType, TransactionStatusSuccess)
+}
 
-// // Creates a new debit transaction entry.
-// func NewTransactionForDebitEntry(wallet *Wallet, amount decimal.Decimal, fee decimal.Decimal, txnType TransactionType, txnStatus TransactionStatus,
-// ) (*Transaction, error) {
-// 	return newTransactionEntry(wallet, false, amount, fee, txnType, txnStatus)
-// }
+// Creates a new debit transaction entry.
+func NewTransactionForDebitEntry(
+	wallet *Wallet,
+	amount, fee decimal.Decimal,
+	txnType TransactionType,
+	txnStatus TransactionStatus,
+) (*Transaction, error) {
+	return NewTransactionEntry(wallet, false, amount, fee, txnType, txnStatus)
+}
 
 // Creates a new transaction for a transfer.
-func NewTransactionForTransfer(fromWallet *Wallet, toWallet *Wallet, amount decimal.Decimal, fee decimal.Decimal,
-) (fromTxEntry *Transaction, toTxEntry *Transaction, err error) {
+func NewTransactionForTransfer(fromWallet, toWallet *Wallet, amount, fee decimal.Decimal) (fromTxEntry, toTxEntry *Transaction, err error) {
 	// Since transfers are internal and always successful, set the status to success.
-	de, err := newTransactionEntry(fromWallet, false, amount, fee, TransactionTypeTransfer, TransactionStatusSuccess)
+	de, err := NewTransactionEntry(fromWallet, false, amount, fee, TransactionTypeTransfer, TransactionStatusSuccess)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	ce, err := newTransactionEntry(toWallet, true, amount, fee, TransactionTypeTransfer, TransactionStatusSuccess)
+	ce, err := NewTransactionEntry(toWallet, true, amount, fee, TransactionTypeTransfer, TransactionStatusSuccess)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -180,14 +183,13 @@ func NewTransactionForTransfer(fromWallet *Wallet, toWallet *Wallet, amount deci
 	return de, ce, nil
 }
 
-func NewTransactionForSwap(fromWallet *Wallet, toWallet *Wallet, debitAmount decimal.Decimal, creditAmount decimal.Decimal, fee decimal.Decimal,
-) (fromTxEntry *Transaction, toTxEntry *Transaction, err error) {
-	de, err := newTransactionEntry(fromWallet, false, debitAmount, fee, TransactionTypeSwap, TransactionStatusSuccess)
+func NewTransactionForSwap(fromWallet, toWallet *Wallet, debitAmount, creditAmount, fee decimal.Decimal) (fromTxEntry, toTxEntry *Transaction, err error) {
+	de, err := NewTransactionEntry(fromWallet, false, debitAmount, fee, TransactionTypeSwap, TransactionStatusSuccess)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	ce, err := newTransactionEntry(toWallet, true, creditAmount, decimal.Zero, TransactionTypeSwap, TransactionStatusSuccess)
+	ce, err := NewTransactionEntry(toWallet, true, creditAmount, decimal.Zero, TransactionTypeSwap, TransactionStatusSuccess)
 	if err != nil {
 		return nil, nil, err
 	}
