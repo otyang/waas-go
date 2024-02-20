@@ -31,4 +31,6 @@ type Account struct {
 	db bun.IDB
 }
 
-func New(db *bun.DB) (Account, error)
+func New(db *bun.DB) *Account {
+	return &Account{db: db}
+}

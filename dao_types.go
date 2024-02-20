@@ -117,6 +117,7 @@ type (
 		After      time.Time
 		Before     time.Time
 		CustomerID *string
+		WalletID   *string
 		Currency   *string
 		IsDebit    *bool
 		Type       *TransactionType

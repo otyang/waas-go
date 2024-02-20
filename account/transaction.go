@@ -47,6 +47,10 @@ func (a *Account) ListTransaction(ctx context.Context, limit int, params waas.Li
 			q.Where("customer_id = ?", params.CustomerID)
 		}
 
+		if params.WalletID != nil {
+			q.Where("wallet_id = ?", params.WalletID)
+		}
+
 		if params.Currency != nil {
 			q.Where("currency = ?", params.Currency)
 		}
@@ -68,16 +72,16 @@ func (a *Account) ListTransaction(ctx context.Context, limit int, params waas.Li
 		}
 
 		if !params.After.IsZero() {
-			q.Where("created_at >= ?", params.After)
+			q.Where("created_at >= ?", params.After).OrderExpr("created_at ASC")
 		}
 
 		if !params.Before.IsZero() {
-			q.Where("created_at <= ?", params.Before)
+			q.Where("created_at <= ?", params.Before).OrderExpr("created_at DESC")
 		}
 
 		// default case
 		if params.After.IsZero() && params.Before.IsZero() {
-			q.Where("created_at <= ?", time.Now().Add(24*2*time.Hour))
+			q.Where("created_at <= ?", time.Now().Add(24*2*time.Hour)).OrderExpr("created_at DESC")
 		}
 	}
 
@@ -96,7 +100,7 @@ func newCursor(tns []waas.Transaction, limit int) {
 	}
 
 	if len(tns) <= limit {
-		return // o, limit-1
+		return // o, limit-1, hasMore=false
 	}
 
 	return // 0, limit , hasMore=true
