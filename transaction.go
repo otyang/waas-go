@@ -32,7 +32,7 @@ type Transaction struct {
 	Narration      *string           `json:"narration" bun:",notnull"`
 	Reversed       bool              `json:"reversed"`
 	CounterpartyID *string           `json:"counterpartyId"`
-	IdempotencyID  string            `json:"idempotencyId" bun:",notnull"` //(used during reversal)
+	IdempotencyId  string            `json:"idempotencyId" bun:",notnull"` //(used during reversal)
 	CreatedAt      time.Time         `json:"createdAt" bun:",notnull"`
 	UpdatedAt      time.Time         `json:"updatedAt" bun:",notnull"`
 }
@@ -142,7 +142,7 @@ func NewTransactionEntry(
 		Narration:      nil,
 		CounterpartyID: nil,
 		Reversed:       false,
-		IdempotencyID:  GenerateID(7),
+		IdempotencyId:  GenerateID(7),
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
 	}, nil

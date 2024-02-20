@@ -46,7 +46,7 @@ type Wallet struct {
 	IsFiat           bool            `json:"isFiat" bun:",notnull"`
 	CreatedAt        time.Time       `json:"createdAt" bun:",notnull"`
 	UpdatedAt        time.Time       `json:"updatedAt" bun:",notnull"`
-	VersionID        string          `json:"versionID" bun:",notnull"`
+	VersionId        string          `json:"versionId" bun:",notnull"`
 }
 
 // NewWallet creates a new Wallet instance.
@@ -61,7 +61,7 @@ func NewWallet(customerID, currencyCode string, isFiat bool) *Wallet {
 		IsFiat:           isFiat,
 		CreatedAt:        time.Now(),
 		UpdatedAt:        time.Now(),
-		VersionID:        GenerateID(7),
+		VersionId:        GenerateID(7),
 	}
 }
 

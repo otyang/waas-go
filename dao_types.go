@@ -2,6 +2,7 @@ package waas
 
 import (
 	"context"
+	"time"
 
 	"github.com/shopspring/decimal"
 )
@@ -109,16 +110,17 @@ type (
 		CustomerID   *string
 		CurrencyCode *string
 		IsFiat       *bool
-		IsFrozen     bool
+		IsFrozen     *bool
 	}
 
 	ListTransactionsFilterParams struct {
-		CustomerID string
-		Currency   string
+		After      time.Time
+		Before     time.Time
+		CustomerID *string
+		Currency   *string
 		IsDebit    *bool
 		Type       *TransactionType
 		Status     *TransactionStatus
-		Narration  string
 		Reversed   *bool
 	}
 )
