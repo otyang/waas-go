@@ -122,7 +122,7 @@ func (a *Account) Swap(ctx context.Context, params waas.SwapRequestParams) (*waa
 		ToWallet:        toWallet,
 		FromTransaction: fromTrsn,
 		ToTransaction:   toTrsn,
-	}, nil
+	}, err
 }
 
 func (a *Account) Reverse(ctx context.Context, transactionID string) (*waas.ReverseResponse, error) {
