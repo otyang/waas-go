@@ -10,7 +10,7 @@ import (
 func (a *Account) CreateWallet(ctx context.Context, wallet *waas.Wallet) (*waas.Wallet, error) {
 	wallet.CreatedAt = time.Now()
 	wallet.UpdatedAt = time.Now()
-	_, err := a.db.NewInsert().Model(wallet).Exec(ctx)
+	_, err := a.db.NewInsert().Model(wallet).Ignore().Exec(ctx)
 	return wallet, err
 }
 

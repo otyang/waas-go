@@ -34,3 +34,55 @@ type Account struct {
 func New(db *bun.DB) *Account {
 	return &Account{db: db}
 }
+
+func (a *Account) NewWithTx(tx bun.Tx) *Account {
+	return &Account{
+		db: tx,
+	}
+}
+
+func (a *Account) WithTxUpdateWalletAndTransaction(ctx context.Context, wallet *waas.Wallet, transaction *waas.Transaction) error {
+	return a.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
+		var err error
+
+		wallet, err = a.NewWithTx(tx).UpdateWallet(ctx, wallet)
+		if err != nil {
+			return err
+		}
+
+		transaction, err = a.NewWithTx(tx).UpdateTransaction(ctx, transaction)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
+func (a *Account) WithTxBulkUpdateWalletAndTransaction(ctx context.Context, wallets []*waas.Wallet, transactions []*waas.Transaction) error {
+	return a.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
+		var err error
+
+		for _, wallet := range wallets {
+			if wallet == nil {
+				continue
+			}
+			wallet, err = a.NewWithTx(tx).UpdateWallet(ctx, wallet)
+			if err != nil {
+				return err
+			}
+		}
+
+		for _, transaction := range transactions {
+			if transaction == nil {
+				continue
+			}
+			transaction, err = a.NewWithTx(tx).UpdateTransaction(ctx, transaction)
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+}

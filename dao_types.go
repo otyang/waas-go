@@ -39,10 +39,8 @@ type (
 	}
 
 	CreditWalletResponse struct {
-		AmountTransfered decimal.Decimal
-		Fee              decimal.Decimal
-		Wallet           Wallet
-		Transaction      Transaction
+		Wallet      *Wallet
+		Transaction *Transaction
 	}
 
 	// DebitWalletParams defines parameters for debiting a wallet.
@@ -51,14 +49,13 @@ type (
 		Amount          decimal.Decimal
 		Fee             decimal.Decimal
 		Type            TransactionType
+		Status          TransactionStatus
 		SourceNarration string
 	}
 
 	DebitWalletResponse struct {
-		AmountTransfered decimal.Decimal
-		Fee              decimal.Decimal
-		Wallet           Wallet
-		Transaction      Transaction
+		Wallet      *Wallet
+		Transaction *Transaction
 	}
 
 	// TransferParams defines parameters for transferring funds between wallets.
@@ -71,12 +68,10 @@ type (
 	}
 
 	TransferResponse struct {
-		AmountTransfered decimal.Decimal
-		Fee              decimal.Decimal
-		FromWallet       Wallet
-		ToWallet         Wallet
-		FromTransaction  Transaction
-		ToTransaction    Transaction
+		FromWallet      *Wallet
+		ToWallet        *Wallet
+		FromTransaction *Transaction
+		ToTransaction   *Transaction
 	}
 
 	// ReverseParams defines parameters for reversing a transaction.
@@ -95,15 +90,16 @@ type (
 		UserID           string
 		FromCurrencyCode string
 		ToCurrencyCode   string
-		Amount           decimal.Decimal
-		Fee              decimal.Decimal
+		FromAmount       decimal.Decimal
+		FromFee          decimal.Decimal
+		ToAmount         decimal.Decimal
 	}
 
 	SwapWalletResponse struct {
-		FromWallet      Wallet
-		ToWallet        Wallet
-		FromTransaction Transaction
-		ToTransaction   Transaction
+		FromWallet      *Wallet
+		ToWallet        *Wallet
+		FromTransaction *Transaction
+		ToTransaction   *Transaction
 	}
 
 	ListWalletsFilterParams struct {

@@ -1,0 +1,92 @@
+{
+    "data": {
+        "asset": "BTC",
+        "wallet": {
+            "id": "5j77quegdwea-btc",
+            "asset": "btc",
+            "assetSymbol": "₿",
+            "assetName": "Bitcoin",
+            "category": "crypto",
+            "balance": 0,
+            "balanceString": "0.00",
+            "altBalanceAsset": "USD",
+            "altBalance": 0,
+            "altBalanceString": "0.00",
+            "imageUrl": "https://apex-network-v3-fs.ams3.digitaloceanspaces.com/public/icons/assets/btc.png",
+            "availableNetworks": [
+                "bitcoin",
+                "bep-20"
+            ],
+            "depositNetworks": [
+                "bitcoin",
+                "bep-20"
+            ],
+            "withdrawalNetworks": [
+                "bitcoin"
+            ],
+            "addresses": [
+                {
+                    "address": "3DHwA8DUQFudd23c9NFKkGrNqbfvKL2AmF",
+                    "label": "",
+                    "memo": "",
+                    "asset": "btc",
+                    "network": "bitcoin",
+                    "explorerUrl": "https://www.blockchain.com/explorer/search?search=3DHwA8DUQFudd23c9NFKkGrNqbfvKL2AmF"
+                }
+            ],
+            "rate": 49352.6909,
+            "rateAsset": "USD",
+            "decimalPlaces": 8,
+            "support": {
+                "wallet": true,
+                "deposit": true,
+                "withdrawal": true,
+                "swap": true,
+                "narration": false
+            }
+        }
+    },
+    "message": "Customer asset wallet for BTC"
+}
+
+
+
+ {
+            "symbol": "ETH",
+            "isFiat": false,
+            "isStableCoin": false,
+            "name": "Ethereum",
+            "logo": "https://furex.fra1.digitaloceanspaces.com/asset/logos/eth.png",
+            "createdAt": "2023-10-05T12:04:28.319Z",
+            "updatedAt": "2023-10-29T15:52:00.009Z",
+            "walletId": null,
+            "buyable": false,
+            "depositable": true,
+            "sellable": true,
+            "swapable": true,
+            "withdrawable": false,
+            "buyableAssets": [
+                "NGN"
+            ],
+            "sellableAssets": [
+                "NGN",
+                "USDT"
+            ],
+            "swapableAssets": [
+                "USDT"
+            ],
+            "balance": [
+                {
+                    "denomination": "ETH",
+                    "value": 0
+                },
+                {
+                    "denomination": "USD",
+                    "value": 0
+                },
+                {
+                    "denomination": "NGN",
+                    "value": 0
+                }
+            ]
+        },
