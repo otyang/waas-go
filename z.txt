@@ -2,16 +2,7 @@
     "data": {
         "asset": "BTC",
         "wallet": {
-            "id": "5j77quegdwea-btc",
-            "asset": "btc",
-            "assetSymbol": "₿",
-            "assetName": "Bitcoin",
-            "category": "crypto",
-            "balance": 0,
-            "balanceString": "0.00",
-            "altBalanceAsset": "USD",
-            "altBalance": 0,
-            "altBalanceString": "0.00",
+            "id": "5j77quegdwea-btc", 
             "imageUrl": "https://apex-network-v3-fs.ams3.digitaloceanspaces.com/public/icons/assets/btc.png",
             "availableNetworks": [
                 "bitcoin",
@@ -54,12 +45,7 @@
  {
             "symbol": "ETH",
             "isFiat": false,
-            "isStableCoin": false,
-            "name": "Ethereum",
-            "logo": "https://furex.fra1.digitaloceanspaces.com/asset/logos/eth.png",
-            "createdAt": "2023-10-05T12:04:28.319Z",
-            "updatedAt": "2023-10-29T15:52:00.009Z",
-            "walletId": null,
+            "isStableCoin": false, 
             "buyable": false,
             "depositable": true,
             "sellable": true,

@@ -46,7 +46,7 @@ type Wallet struct {
 	IsFiat           bool            `json:"isFiat" bun:",notnull"`
 	CreatedAt        time.Time       `json:"createdAt" bun:",notnull"`
 	UpdatedAt        time.Time       `json:"updatedAt" bun:",notnull"`
-	VersionId        string          `json:"versionId" bun:",notnull"`
+	VersionId        string          `json:"-" bun:",notnull"`
 }
 
 // NewWallet creates a new Wallet instance.
