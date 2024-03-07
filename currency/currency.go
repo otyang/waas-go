@@ -26,3 +26,13 @@ type Currency struct {
 	CreatedAt           time.Time       `json:"createdAt"`
 	UpdatedAt           time.Time       `json:"updatedAt"`
 }
+
+func (c *Currency) UpdateBuyRate(newRate decimal.Decimal) *Currency {
+	c.RateBuy = newRate
+	return c
+}
+
+func (c *Currency) UpdateSellRate(newRate decimal.Decimal) *Currency {
+	c.RateSell = newRate
+	return c
+}

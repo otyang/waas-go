@@ -15,8 +15,8 @@ var (
 	ErrWalletInvalidAmount            = NewWaasError("invalid amount: cannot be zero or negative")
 	ErrWalletInvalidTransferSameOwner = NewWaasError("cannot transfer funds to the same owner or wallet")
 	ErrWalletInvalid                  = NewWaasError("invalid wallet")
-	ErrWalletSameCurrencySwap         = NewWaasError("cannot swap between the same currency")
-	ErrWalletSwapSameOwnerRequired    = NewWaasError("cannot swap to another person account")
+	ErrWalletSameCurrencySwap         = NewWaasError("cannot swap between same currency")
+	ErrWalletSwapSameOwnerRequired    = NewWaasError("wamp must be within same user")
 )
 
 // GenerateWalletID generates a wallet ID

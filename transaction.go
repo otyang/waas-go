@@ -21,8 +21,8 @@ type Transaction struct {
 	ID             string            `json:"id" bun:"id,pk"`
 	CustomerID     string            `json:"customerId" bun:",notnull"`
 	WalletID       string            `json:"walletId" bun:",notnull"`
-	Currency       string            `json:"currency" bun:",notnull"`
 	IsDebit        bool              `json:"isDebit" bun:",notnull"`
+	Currency       string            `json:"currency" bun:",notnull"`
 	Amount         decimal.Decimal   `json:"amount" bun:"type:decimal(24,8),notnull"`
 	Fee            decimal.Decimal   `json:"fee" bun:"type:decimal(24,8),notnull"`
 	TotalAmount    decimal.Decimal   `json:"totalAmount" bun:"type:decimal(24,8),notnull"`

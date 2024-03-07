@@ -25,14 +25,14 @@ type AllWalletsResponse struct {
 	TotalBalances []TotalBalanceResponse `json:"totalBalances"`
 }
 
-func Wallets(wallets []*waas.Wallet, rates []currency.Currency) (*AllWalletsResponse, error) {
+func Wallets(wallets []*waas.Wallet, currencies []currency.Currency) (*AllWalletsResponse, error) {
 	var (
 		usdTotalBalance decimal.Decimal
 		ws              []NewWalletResponse
 	)
 
 	for _, _w := range wallets {
-		_c, err := currency.FindCurrency(rates, _w.CurrencyCode)
+		_c, err := currency.FindCurrency(currencies, _w.CurrencyCode)
 		if err != nil {
 			return nil, err
 		}
