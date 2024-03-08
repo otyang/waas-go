@@ -21,15 +21,16 @@ func (a *Account) GetTransaction(ctx context.Context, transactionID string) (*wa
 }
 
 func (a *Account) UpdateTransaction(ctx context.Context, transaction *waas.Transaction) (*waas.Transaction, error) {
-	oldIdempotencyID := transaction.IdempotencyId  // extract oldVersionID. for concurrency locks
-	transaction.IdempotencyId = waas.GenerateID(7) // newVId
+	// oldIdempotencyID := transaction.IdempotencyId  // extract oldVersionID. for concurrency locks
+	// transaction.IdempotencyId = waas.GenerateID(7) // newVId
+	// transaction.UpdatedAt = time.Now()
+	// _, err := a.db.NewUpdate().Model(transaction).WherePK().
+	// 	Where("idempotency_id = ?", oldIdempotencyID).
+	// 	Exec(ctx)
+	// return transaction, err
+
 	transaction.UpdatedAt = time.Now()
-
-	_, err := a.db.NewUpdate().
-		Model(transaction).WherePK().
-		Where("idempotency_id = ?", oldIdempotencyID).
-		Exec(ctx)
-
+	_, err := a.db.NewUpdate().Model(transaction).WherePK().Exec(ctx)
 	return transaction, err
 }
 

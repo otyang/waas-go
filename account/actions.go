@@ -20,10 +20,7 @@ func (a *Account) Credit(ctx context.Context, params waas.CreditWalletParams) (*
 		return nil, err
 	}
 
-	transaction, err := waas.NewTransactionForCreditEntry(wallet, params.Amount, params.Fee, params.Type)
-	if err != nil {
-		return nil, err
-	}
+	transaction := waas.NewTransactionForCreditEntry(wallet, params.Amount, params.Fee, params.Type)
 
 	err = a.WithTxUpdateWalletAndTransaction(ctx, wallet, transaction)
 	if err != nil {
@@ -44,10 +41,7 @@ func (a *Account) Debit(ctx context.Context, params waas.DebitWalletParams) (*wa
 		return nil, err
 	}
 
-	transaction, err := waas.NewTransactionForDebitEntry(wallet, params.Amount, params.Fee, params.Type, params.Status)
-	if err != nil {
-		return nil, err
-	}
+	transaction := waas.NewTransactionForDebitEntry(wallet, params.Amount, params.Fee, params.Type, params.Status)
 
 	err = a.WithTxUpdateWalletAndTransaction(ctx, wallet, transaction)
 	if err != nil {
@@ -73,10 +67,7 @@ func (a *Account) Transfer(ctx context.Context, params waas.TransferRequestParam
 		return nil, err
 	}
 
-	fromTrsn, toTrsn, err := waas.NewTransactionForTransfer(fromWallet, toWallet, params.Amount, params.Fee)
-	if err != nil {
-		return nil, err
-	}
+	fromTrsn, toTrsn := waas.NewTransactionForTransfer(fromWallet, toWallet, params.Amount, params.Fee)
 
 	err = a.WithTxBulkUpdateWalletAndTransaction(ctx, []*waas.Wallet{fromWallet, toWallet}, []*waas.Transaction{fromTrsn, toTrsn})
 	if err != nil {
@@ -107,10 +98,7 @@ func (a *Account) Swap(ctx context.Context, params waas.SwapRequestParams) (*waa
 		return nil, err
 	}
 
-	fromTrsn, toTrsn, err := waas.NewTransactionForSwap(fromWallet, toWallet, params.FromAmount, params.ToAmount, params.FromFee)
-	if err != nil {
-		return nil, err
-	}
+	fromTrsn, toTrsn := waas.NewTransactionForSwap(fromWallet, toWallet, params.FromAmount, params.ToAmount, params.FromFee)
 
 	err = a.WithTxBulkUpdateWalletAndTransaction(ctx, []*waas.Wallet{fromWallet, toWallet}, []*waas.Transaction{fromTrsn, toTrsn})
 	if err != nil {
@@ -126,5 +114,25 @@ func (a *Account) Swap(ctx context.Context, params waas.SwapRequestParams) (*waa
 }
 
 func (a *Account) Reverse(ctx context.Context, transactionID string) (*waas.ReverseResponse, error) {
-	return nil, nil
+	t, err := a.GetTransaction(ctx, transactionID)
+	if err != nil {
+		return nil, err
+	}
+
+	wallet, err := a.GetWalletByID(ctx, t.WalletID)
+	if err != nil {
+		return nil, err
+	}
+
+	rr, err := t.Reverse(wallet)
+	if err != nil {
+		return nil, err
+	}
+
+	err = a.WithTxBulkUpdateWalletAndTransaction(ctx, []*waas.Wallet{rr.Wallet}, []*waas.Transaction{rr.OldTx, rr.NewTx})
+	if err != nil {
+		return nil, err
+	}
+
+	return rr, nil
 }

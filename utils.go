@@ -45,19 +45,19 @@ const (
 	TransactionStatusSuccess TransactionStatus = "SUCCESS"
 )
 
-func (t TransactionType) IsValid() error {
-	switch t {
-	case
-		TransactionTypeSwap, TransactionTypeTransfer, TransactionTypeDeposit, TransactionTypeWithdrawal:
-		return nil
-	}
-	return ErrInvalidTransactionType
-}
+// func (t TransactionType) IsValid() error {
+// 	switch t {
+// 	case
+// 		TransactionTypeSwap, TransactionTypeTransfer, TransactionTypeDeposit, TransactionTypeWithdrawal:
+// 		return nil
+// 	}
+// 	return ErrInvalidTransactionType
+// }
 
-func (t TransactionStatus) IsValid() error {
-	switch t {
-	case TransactionStatusNew, TransactionStatusPending, TransactionStatusFailed, TransactionStatusSuccess:
-		return nil
-	}
-	return ErrInvalidTransactionStatus
-}
+// func (t TransactionStatus) IsValid() error {
+// 	switch t {
+// 	case TransactionStatusNew, TransactionStatusPending, TransactionStatusFailed, TransactionStatusSuccess:
+// 		return nil
+// 	}
+// 	return ErrInvalidTransactionStatus
+// }

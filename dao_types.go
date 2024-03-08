@@ -80,9 +80,9 @@ type (
 	}
 
 	ReverseResponse struct {
-		OldUpdatedTx  *Transaction
-		NewTx         *Transaction
-		UpdatedWallet *Wallet
+		OldTx  *Transaction
+		NewTx  *Transaction
+		Wallet *Wallet
 	}
 
 	// SwapParams defines parameters for swapping currencies between wallets.
