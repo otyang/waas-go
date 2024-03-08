@@ -37,8 +37,8 @@ type Transaction struct {
 
 // SetNarration sets the narration of the transaction.
 func (t *Transaction) SetNarration(narration string) *Transaction {
-	if nn := strings.TrimSpace(narration); nn != "" {
-		t.Narration = &nn
+	if trimmedNarration := strings.TrimSpace(narration); trimmedNarration != "" {
+		t.Narration = &trimmedNarration
 	}
 	return t
 }

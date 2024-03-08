@@ -1,9 +1,7 @@
 {
     "data": {
         "asset": "BTC",
-        "wallet": {
-            "id": "5j77quegdwea-btc", 
-            "imageUrl": "https://apex-network-v3-fs.ams3.digitaloceanspaces.com/public/icons/assets/btc.png",
+        "wallet": { 
             "availableNetworks": [
                 "bitcoin",
                 "bep-20"
@@ -24,16 +22,9 @@
                     "network": "bitcoin",
                     "explorerUrl": "https://www.blockchain.com/explorer/search?search=3DHwA8DUQFudd23c9NFKkGrNqbfvKL2AmF"
                 }
-            ],
-            "rate": 49352.6909,
-            "rateAsset": "USD",
-            "decimalPlaces": 8,
+            ],  
             "support": {
-                "wallet": true,
-                "deposit": true,
-                "withdrawal": true,
-                "swap": true,
-                "narration": false
+                "wallet": true,    
             }
         }
     },
@@ -42,15 +33,7 @@
 
 
 
- {
-            "symbol": "ETH",
-            "isFiat": false,
-            "isStableCoin": false, 
-            "buyable": false,
-            "depositable": true,
-            "sellable": true,
-            "swapable": true,
-            "withdrawable": false,
+ {  
             "buyableAssets": [
                 "NGN"
             ],
