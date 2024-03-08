@@ -21,6 +21,7 @@ func (a *Account) Credit(ctx context.Context, params waas.CreditWalletParams) (*
 	}
 
 	transaction := waas.NewTransactionForCreditEntry(wallet, params.Amount, params.Fee, params.Type)
+	transaction.SetNarration(params.Narration)
 
 	err = a.WithTxBulkUpdateWalletAndTransaction(ctx, []*waas.Wallet{wallet}, []*waas.Transaction{transaction})
 	if err != nil {
@@ -42,6 +43,7 @@ func (a *Account) Debit(ctx context.Context, params waas.DebitWalletParams) (*wa
 	}
 
 	transaction := waas.NewTransactionForDebitEntry(wallet, params.Amount, params.Fee, params.Type, params.Status)
+	transaction.SetNarration(params.Narration)
 
 	err = a.WithTxBulkUpdateWalletAndTransaction(ctx, []*waas.Wallet{wallet}, []*waas.Transaction{transaction})
 	if err != nil {
@@ -68,6 +70,8 @@ func (a *Account) Transfer(ctx context.Context, params waas.TransferRequestParam
 	}
 
 	fromTrsn, toTrsn := waas.NewTransactionForTransfer(fromWallet, toWallet, params.Amount, params.Fee)
+	fromTrsn.SetNarration(params.Narration)
+	toTrsn.SetNarration(params.Narration)
 
 	err = a.WithTxBulkUpdateWalletAndTransaction(ctx, []*waas.Wallet{fromWallet, toWallet}, []*waas.Transaction{fromTrsn, toTrsn})
 	if err != nil {

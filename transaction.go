@@ -1,6 +1,7 @@
 package waas
 
 import (
+	"strings"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -12,7 +13,7 @@ var (
 	ErrInvalidTransactionStatus = NewWaasError("invalid transaction status")
 	ErrInvalidTransactionObject = NewWaasError("invalid transaction: nil transaction object")
 	ErrUnsupportedReversalType  = NewWaasError("unsupported transaction type for reversal")
-	ErrReverseSettledTx         = NewWaasError("cannot reverse an already reversed/settled transaction")
+	ErrAlreadyReversedTx        = NewWaasError("cannot reverse an already reversed/settled transaction")
 )
 
 type Transaction struct {
@@ -36,13 +37,17 @@ type Transaction struct {
 
 // SetNarration sets the narration of the transaction.
 func (t *Transaction) SetNarration(narration string) *Transaction {
-	t.Narration = &narration
+	if nn := strings.TrimSpace(narration); nn != "" {
+		t.Narration = &nn
+	}
 	return t
 }
 
 // SetCounterpartyID sets the counterparty ID of the transaction.
 func (t *Transaction) SetCounterpartyID(id string) *Transaction {
-	t.CounterpartyID = &id
+	if trimmedID := strings.TrimSpace(id); trimmedID != "" {
+		t.CounterpartyID = &trimmedID
+	}
 	return t
 }
 
@@ -52,7 +57,7 @@ func (t *Transaction) canBeReversed() error {
 	}
 
 	if t.Reversed {
-		return ErrReverseSettledTx
+		return ErrAlreadyReversedTx
 	}
 
 	// only withdraw or debit transaction can be reversed
@@ -107,7 +112,7 @@ func NewTransactionForCreditEntry(wallet *Wallet, amount, fee decimal.Decimal, t
 		IsDebit:        false,
 		Amount:         amount,
 		Fee:            fee,
-		TotalAmount:    amount.Add(fee),
+		TotalAmount:    amount,
 		BalanceAfter:   wallet.AvailableBalance,
 		Type:           txnType,
 		Status:         TransactionStatusSuccess,

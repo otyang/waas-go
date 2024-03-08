@@ -31,11 +31,11 @@ type IAccountFeature interface {
 type (
 	// CreditWalletParams defines parameters for crediting a wallet.
 	CreditWalletParams struct {
-		WalletID        string
-		Amount          decimal.Decimal
-		Fee             decimal.Decimal
-		Type            TransactionType
-		SourceNarration string
+		WalletID  string
+		Amount    decimal.Decimal
+		Fee       decimal.Decimal
+		Type      TransactionType
+		Narration string
 	}
 
 	CreditWalletResponse struct {
@@ -45,12 +45,12 @@ type (
 
 	// DebitWalletParams defines parameters for debiting a wallet.
 	DebitWalletParams struct {
-		WalletID        string
-		Amount          decimal.Decimal
-		Fee             decimal.Decimal
-		Type            TransactionType
-		Status          TransactionStatus
-		SourceNarration string
+		WalletID  string
+		Amount    decimal.Decimal
+		Fee       decimal.Decimal
+		Type      TransactionType
+		Status    TransactionStatus
+		Narration string
 	}
 
 	DebitWalletResponse struct {
@@ -60,11 +60,11 @@ type (
 
 	// TransferParams defines parameters for transferring funds between wallets.
 	TransferRequestParams struct {
-		FromWalletID    string          `json:"fromWid"`
-		ToWalletID      string          `json:"toWid"`
-		Amount          decimal.Decimal `json:"amount"`
-		Fee             decimal.Decimal `json:"fee"`
-		SourceNarration string
+		FromWalletID string          `json:"fromWid"`
+		ToWalletID   string          `json:"toWid"`
+		Amount       decimal.Decimal `json:"amount"`
+		Fee          decimal.Decimal `json:"fee"`
+		Narration    string          `json:"narration"`
 	}
 
 	TransferResponse struct {

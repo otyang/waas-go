@@ -43,7 +43,7 @@ func TestTransaction_Reverse(t *testing.T) {
 			tx:        &Transaction{Type: TransactionTypeWithdrawal, Status: TransactionStatusSuccess, IsDebit: true, Amount: decimal.NewFromFloat(100), Fee: decimal.NewFromFloat(5), Reversed: true},
 			wallet:    &Wallet{},
 			wantErr:   true,
-			wantError: ErrReverseSettledTx,
+			wantError: ErrAlreadyReversedTx,
 		},
 		{
 			name:      "Error on reversing nil transaction",
