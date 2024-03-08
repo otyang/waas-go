@@ -22,7 +22,7 @@ func (a *Account) Credit(ctx context.Context, params waas.CreditWalletParams) (*
 
 	transaction := waas.NewTransactionForCreditEntry(wallet, params.Amount, params.Fee, params.Type)
 
-	err = a.WithTxUpdateWalletAndTransaction(ctx, wallet, transaction)
+	err = a.WithTxBulkUpdateWalletAndTransaction(ctx, []*waas.Wallet{wallet}, []*waas.Transaction{transaction})
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +43,7 @@ func (a *Account) Debit(ctx context.Context, params waas.DebitWalletParams) (*wa
 
 	transaction := waas.NewTransactionForDebitEntry(wallet, params.Amount, params.Fee, params.Type, params.Status)
 
-	err = a.WithTxUpdateWalletAndTransaction(ctx, wallet, transaction)
+	err = a.WithTxBulkUpdateWalletAndTransaction(ctx, []*waas.Wallet{wallet}, []*waas.Transaction{transaction})
 	if err != nil {
 		return nil, err
 	}

@@ -46,7 +46,7 @@ func (t *Transaction) SetCounterpartyID(id string) *Transaction {
 	return t
 }
 
-func (t *Transaction) CanBeReversed() error {
+func (t *Transaction) canBeReversed() error {
 	if t == nil {
 		return ErrInvalidTransactionObject
 	}
@@ -64,10 +64,7 @@ func (t *Transaction) CanBeReversed() error {
 }
 
 func (t *Transaction) Reverse(wallet *Wallet) (*ReverseResponse, error) {
-	// t.mutex.Lock()
-	// defer t.mutex.Unlock()
-
-	if err := t.CanBeReversed(); err != nil {
+	if err := t.canBeReversed(); err != nil {
 		return nil, err
 	}
 
