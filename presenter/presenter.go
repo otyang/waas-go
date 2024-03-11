@@ -60,7 +60,7 @@ func generateWalletResponse(w *waas.Wallet, c currency.Currency) NewWalletRespon
 	var usdEquivalent decimal.Decimal
 
 	if !c.RateBuy.Equal(decimal.Zero) { // since anything divide by 0 is error/panic. let's avoid it
-		usdEquivalent = w.AvailableBalance.Div(c.RateBuy).Mul(c.RateSell).RoundCeil(int32(c.Precision))
+		usdEquivalent = w.AvailableBalance.Div(c.RateBuy).RoundCeil(int32(c.Precision))
 	}
 
 	return NewWalletResponse{

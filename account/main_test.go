@@ -35,7 +35,7 @@ func setUp() *bun.DB {
 }
 
 func tearDown(db *bun.DB) {
-	var mmodels = []any{(*waas.Transaction)(nil), (*waas.Wallet)(nil), (*currency.Currency)(nil)}
+	mmodels := []any{(*waas.Transaction)(nil), (*waas.Wallet)(nil), (*currency.Currency)(nil)}
 
 	for _, model := range mmodels {
 		_, err := db.NewDropTable().Model(model).Exec(context.TODO())
@@ -45,9 +45,14 @@ func tearDown(db *bun.DB) {
 	}
 }
 
+func createTestRandomWallet(customerID, currencyCode string) *waas.Wallet {
+	return waas.NewWallet(customerID, currencyCode, false)
+}
+
 func TestMain(m *testing.M) {
 	TestDB = setUp()
+	defer tearDown(TestDB)
+
 	exitVal := m.Run()
-	tearDown(TestDB)
 	os.Exit(exitVal)
 }

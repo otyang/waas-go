@@ -23,6 +23,7 @@ func NewTransactionID() string {
 }
 
 func GenerateID(size int) string {
+	// time.Now().UTC().Format("2006-01-02 15:04:05.999999")
 	return gonanoid.MustGenerate("0123456789abcdefghijklmnopqrstuvwxyz", size)
 }
 

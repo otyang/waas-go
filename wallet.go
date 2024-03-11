@@ -55,7 +55,7 @@ func NewWallet(customerID, currencyCode string, isFiat bool) *Wallet {
 		mutex:            sync.Mutex{},
 		ID:               GenerateWalletID(currencyCode, customerID),
 		CustomerID:       customerID,
-		CurrencyCode:     currencyCode,
+		CurrencyCode:     strings.ToLower(currencyCode),
 		AvailableBalance: decimal.Zero,
 		IsFrozen:         false,
 		IsFiat:           isFiat,
