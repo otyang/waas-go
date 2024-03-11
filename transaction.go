@@ -17,22 +17,34 @@ var (
 )
 
 type Transaction struct {
-	ID             string            `json:"id" bun:"id,pk"`
-	CustomerID     string            `json:"customerId" bun:",notnull"`
-	WalletID       string            `json:"walletId" bun:",notnull"`
-	IsDebit        bool              `json:"isDebit" bun:",notnull"`
-	Currency       string            `json:"currency" bun:",notnull"`
-	Amount         decimal.Decimal   `json:"amount" bun:"type:decimal(24,8),notnull"`
-	Fee            decimal.Decimal   `json:"fee" bun:"type:decimal(24,8),notnull"`
-	TotalAmount    decimal.Decimal   `json:"totalAmount" bun:"type:decimal(24,8),notnull"`
-	BalanceAfter   decimal.Decimal   `json:"balanceAfter" bun:"type:decimal(24,8),notnull"`
-	Type           TransactionType   `json:"type" bun:",notnull"`
-	Status         TransactionStatus `json:"status" bun:",notnull"`
-	Narration      *string           `json:"narration" bun:",notnull"`
-	Reversed       bool              `json:"reversed"`
-	CounterpartyID *string           `json:"counterpartyId"`
-	CreatedAt      time.Time         `json:"createdAt" bun:",notnull"`
-	UpdatedAt      time.Time         `json:"updatedAt" bun:",notnull"`
+	ID               string            `json:"id" bun:"id,pk"`
+	CustomerID       string            `json:"customerId" bun:",notnull"`
+	WalletID         string            `json:"walletId" bun:",notnull"`
+	IsDebit          bool              `json:"isDebit" bun:",notnull"`
+	Currency         string            `json:"currency" bun:",notnull"`
+	Amount           decimal.Decimal   `json:"amount" bun:"type:decimal(24,8),notnull"`
+	Fee              decimal.Decimal   `json:"fee" bun:"type:decimal(24,8),notnull"`
+	TotalAmount      decimal.Decimal   `json:"totalAmount" bun:"type:decimal(24,8),notnull"`
+	BalanceAfter     decimal.Decimal   `json:"balanceAfter" bun:"type:decimal(24,8),notnull"`
+	OriginalCurrency string            `json:"originalCurrency" bun:",notnull"`
+	OriginalAmount   decimal.Decimal   `json:"originalAmount" bun:"type:decimal(24,8),notnull"`
+	OriginalFee      decimal.Decimal   `json:"originalFee" bun:"type:decimal(24,8),notnull"`
+	Type             TransactionType   `json:"type" bun:",notnull"`
+	Status           TransactionStatus `json:"status" bun:",notnull"`
+	Narration        *string           `json:"narration" bun:",notnull"`
+	Reversed         bool              `json:"reversed"`
+	CounterpartyID   *string           `json:"counterpartyId"`
+	CreatedAt        time.Time         `json:"createdAt" bun:",notnull"`
+	UpdatedAt        time.Time         `json:"updatedAt" bun:",notnull"`
+}
+
+// SetNarration sets the narration of the transaction.
+func (t *Transaction) SetOriginalDetails(originalCurrency string, originalAmount, originalFee decimal.Decimal) *Transaction {
+	t.OriginalCurrency = originalCurrency
+	t.OriginalAmount = originalAmount
+	t.OriginalFee = originalFee
+
+	return t
 }
 
 // SetNarration sets the narration of the transaction.
@@ -108,8 +120,8 @@ func NewTransactionForCreditEntry(wallet *Wallet, amount, fee decimal.Decimal, t
 		ID:             NewTransactionID(),
 		CustomerID:     wallet.CustomerID,
 		WalletID:       wallet.ID,
-		Currency:       wallet.CurrencyCode,
 		IsDebit:        false,
+		Currency:       wallet.CurrencyCode,
 		Amount:         amount,
 		Fee:            fee,
 		TotalAmount:    amount,
@@ -117,8 +129,8 @@ func NewTransactionForCreditEntry(wallet *Wallet, amount, fee decimal.Decimal, t
 		Type:           txnType,
 		Status:         TransactionStatusSuccess,
 		Narration:      nil,
-		CounterpartyID: nil,
 		Reversed:       false,
+		CounterpartyID: nil,
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
 	}
@@ -162,6 +174,10 @@ func NewTransactionForTransfer(fromWallet, toWallet *Wallet, amount, fee decimal
 func NewTransactionForSwap(fromWallet, toWallet *Wallet, debitAmount, creditAmount, fee decimal.Decimal) (fromTx, toTx *Transaction) {
 	de := NewTransactionForDebitEntry(fromWallet, debitAmount, fee, TransactionTypeSwap, TransactionStatusSuccess)
 	ce := NewTransactionForCreditEntry(toWallet, creditAmount, decimal.Zero, TransactionTypeSwap)
+
+	//
+	de.SetOriginalDetails(toWallet.CurrencyCode, creditAmount, fee)
+	ce.SetOriginalDetails(fromWallet.CurrencyCode, debitAmount, decimal.Zero)
 
 	de.SetCounterpartyID(ce.ID)
 	ce.SetCounterpartyID(de.ID)

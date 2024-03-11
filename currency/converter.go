@@ -102,6 +102,10 @@ func CalculateRate(currencies []Currency, baseCurrency, from, to string) (decima
 		if err != nil {
 			return decimal.Zero, err
 		}
+
+		if fromCurrency.RateBuy.Equal(decimal.Zero) { // since mathematically 1 divide by 0 is error
+			return decimal.Zero, nil
+		}
 		return decimal.NewFromInt(1).Div(fromCurrency.RateBuy), nil
 	}
 
@@ -116,20 +120,25 @@ func CalculateRate(currencies []Currency, baseCurrency, from, to string) (decima
 	}
 
 	// (target to base) to target
+	if fromCurrency.RateBuy.Equal(decimal.Zero) { // since 1 divide by 0 is error. lets avoid it
+		return decimal.Zero, nil
+	}
 	return (decimal.NewFromInt(1).Div(fromCurrency.RateBuy)).Mul(toCurrency.RateSell), nil
 }
 
 // Quote structure
 type Quote struct {
-	BaseCurrency   string          `json:"baseCurrency"`
-	FromCurrency   string          `json:"fromCurrency"`
-	FromAmount     decimal.Decimal `json:"fromAmount"`
-	Fee            decimal.Decimal `json:"fee"`
-	AmountToDeduct decimal.Decimal `json:"amountToDeduct"`
-	Rate           decimal.Decimal `json:"rate"`
-	ToCurrency     string          `json:"toCurrency"`
-	FinalAmount    decimal.Decimal `json:"totalAmount"`
-	Date           time.Time       `json:"date"`
+	BaseCurrency     string          `json:"baseCurrency"`
+	FromCurrencyInfo Currency        `json:"fromCurrencyInfo"`
+	FromCurrency     string          `json:"fromCurrency"`
+	FromAmount       decimal.Decimal `json:"fromAmount"`
+	ToCurrency       string          `json:"toCurrency"`
+	ToCurrencyInfo   Currency        `json:"toCurrencyInfo"`
+	ToAmount         decimal.Decimal `json:"toAmount"`
+	Fee              decimal.Decimal `json:"fee"`
+	Rate             decimal.Decimal `json:"rate"`
+	GrossAmount      decimal.Decimal `json:"grossAmount"`
+	Date             time.Time       `json:"date"`
 }
 
 // NewQuote creates a new quote object.
@@ -154,14 +163,16 @@ func NewQuote(rateSource []Currency, baseCurrency, fromCurrency, toCurrency stri
 	}
 
 	return &Quote{
-		BaseCurrency:   baseCurrency,
-		FromCurrency:   fromCurrency,
-		FromAmount:     fromAmount,
-		Fee:            fee,
-		AmountToDeduct: fromAmount.Add(fee).RoundCeil(int32(infoFrom.Precision)),
-		Rate:           rate,
-		ToCurrency:     toCurrency,
-		FinalAmount:    fromAmount.Mul(rate).RoundCeil(int32(infoTo.Precision)),
-		Date:           time.Now(),
+		BaseCurrency:     baseCurrency,
+		FromCurrencyInfo: *infoFrom,
+		FromCurrency:     fromCurrency,
+		FromAmount:       fromAmount,
+		ToCurrencyInfo:   *infoTo,
+		ToCurrency:       toCurrency,
+		ToAmount:         fromAmount.Mul(rate).RoundCeil(int32(infoTo.Precision)),
+		Fee:              fee,
+		Rate:             rate,
+		GrossAmount:      fromAmount.Add(fee).RoundCeil(int32(infoFrom.Precision)),
+		Date:             time.Now(),
 	}, nil
 }

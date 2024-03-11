@@ -165,15 +165,15 @@ func TestNewQuote_ValidInput(t *testing.T) {
 	assert.NoError(t, err)
 
 	want := &Quote{
-		BaseCurrency:   baseCurrency,
-		FromCurrency:   fromCurrency,
-		FromAmount:     fromAmount,
-		Fee:            fee,
-		AmountToDeduct: fromAmount.Add(fee),
-		Rate:           rate,
-		ToCurrency:     toCurrency,
-		FinalAmount:    decimal.NewFromFloat(95),
-		Date:           time.Time{},
+		BaseCurrency: baseCurrency,
+		FromCurrency: fromCurrency,
+		FromAmount:   fromAmount,
+		Fee:          fee,
+		GrossAmount:  fromAmount.Add(fee),
+		Rate:         rate,
+		ToCurrency:   toCurrency,
+		ToAmount:     decimal.NewFromFloat(95),
+		Date:         time.Time{},
 	}
 
 	// Call the function
@@ -183,10 +183,10 @@ func TestNewQuote_ValidInput(t *testing.T) {
 	assert.Equal(t, want.FromCurrency, got.FromCurrency)
 	assert.Equal(t, want.FromAmount, got.FromAmount)
 	assert.Equal(t, want.Fee, got.Fee)
-	assert.Equal(t, want.AmountToDeduct, got.AmountToDeduct)
+	assert.Equal(t, want.GrossAmount, got.GrossAmount)
 	assert.Equal(t, want.Rate, got.Rate)
 	assert.Equal(t, want.ToCurrency, got.ToCurrency)
-	assert.Equal(t, want.FinalAmount.String(), got.FinalAmount.String())
+	assert.Equal(t, want.ToAmount.String(), got.ToAmount.String())
 }
 
 func TestNewQuote_EmptyRateSource(t *testing.T) {

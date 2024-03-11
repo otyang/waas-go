@@ -29,10 +29,7 @@ func (a *Account) UpdateWallet(ctx context.Context, wallet *waas.Wallet) (*waas.
 	wallet.VersionId = waas.GenerateID(7) // newVId
 	wallet.UpdatedAt = time.Now()
 
-	_, err := a.db.NewUpdate().
-		Model(wallet).WherePK().
-		Where("version_id = ?", oldVersionID).
-		Exec(ctx)
+	_, err := a.db.NewUpdate().Model(wallet).WherePK().Where("version_id = ?", oldVersionID).Exec(ctx)
 
 	return wallet, err
 }
