@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccount_CreateWallet(t *testing.T) {
+func TestAccount_Wallets_and_all_its_assosiated_functions(t *testing.T) {
 	acc := &Account{
 		db: TestDB,
 	}
@@ -67,8 +67,4 @@ func TestAccount_CreateWallet(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, 0, len(gotList))
 	})
-}
-
-func toPointer[T any](v T) *T {
-	return &v
 }

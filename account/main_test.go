@@ -49,6 +49,10 @@ func createTestRandomWallet(customerID, currencyCode string) *waas.Wallet {
 	return waas.NewWallet(customerID, currencyCode, false)
 }
 
+func toPointer[T any](v T) *T {
+	return &v
+}
+
 func TestMain(m *testing.M) {
 	TestDB = setUp()
 	defer tearDown(TestDB)

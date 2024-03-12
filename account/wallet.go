@@ -43,7 +43,7 @@ func (a *Account) ListWallet(ctx context.Context, params waas.ListWalletsFilterP
 	}
 
 	if params.CurrencyCode != nil {
-		q.Where("lower(currency_code) = ?", params.CurrencyCode)
+		q.Where("currency_code LIKE ?", params.CurrencyCode)
 	}
 
 	if params.IsFiat != nil {

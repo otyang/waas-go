@@ -46,7 +46,7 @@ func (a *Account) ListTransaction(ctx context.Context, limit int, params waas.Li
 		}
 
 		if params.Currency != nil {
-			q.Where("currency = ?", params.Currency)
+			q.Where("currency LIKE ?", params.Currency)
 		}
 
 		if params.IsDebit != nil {
@@ -54,11 +54,11 @@ func (a *Account) ListTransaction(ctx context.Context, limit int, params waas.Li
 		}
 
 		if params.Type != nil {
-			q.Where("type = ?", params.Type)
+			q.Where("type LIKE ?", params.Type)
 		}
 
 		if params.Status != nil {
-			q.Where("status = ?", params.Status)
+			q.Where("status LIKE ?", params.Status)
 		}
 
 		if params.Reversed != nil {
@@ -75,7 +75,7 @@ func (a *Account) ListTransaction(ctx context.Context, limit int, params waas.Li
 
 		// default case
 		if params.After.IsZero() && params.Before.IsZero() {
-			q.Where("created_at <= ?", time.Now().Add(24*2*time.Hour)).OrderExpr("created_at DESC")
+			q.Where("created_at <= ?", time.Now().UTC().Add(24*2*time.Hour)).OrderExpr("created_at DESC")
 		}
 	}
 
