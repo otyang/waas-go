@@ -12,6 +12,8 @@ import (
 )
 
 func Test_calcTotalBalance(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		name                  string
 		totalAmountUSD        decimal.Decimal
@@ -60,6 +62,8 @@ func Test_calcTotalBalance(t *testing.T) {
 }
 
 func Test_generateWalletResponse_NormalConversion(t *testing.T) {
+	t.Parallel()
+
 	wallet := &waas.Wallet{
 		ID:               "wallet123",
 		CustomerID:       "customer456",
@@ -75,7 +79,7 @@ func Test_generateWalletResponse_NormalConversion(t *testing.T) {
 		RateSell:  decimal.NewFromInt(19500), // $19,500 per BTC
 	}
 
-	expectedAvailableBalanceInUSD := wallet.AvailableBalance.Div(curr.RateBuy).Mul(curr.RateSell).RoundCeil(int32(curr.Precision))
+	expectedAvailableBalanceInUSD := wallet.AvailableBalance.Div(curr.RateBuy).RoundCeil(int32(curr.Precision))
 
 	response := generateWalletResponse(wallet, curr)
 

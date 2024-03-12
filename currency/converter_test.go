@@ -10,6 +10,8 @@ import (
 )
 
 func TestNewCurrencies(t *testing.T) {
+	t.Parallel()
+
 	// Valid data
 	validRates := []struct {
 		Code     string
@@ -42,6 +44,8 @@ func TestNewCurrencies(t *testing.T) {
 }
 
 func TestFindCurrency(t *testing.T) {
+	t.Parallel()
+
 	// Setup Currencies
 	currencies := []Currency{
 		{Code: "USD", RateBuy: decimal.NewFromInt(100), RateSell: decimal.NewFromInt(101)},
@@ -65,6 +69,8 @@ func TestFindCurrency(t *testing.T) {
 }
 
 func TestCalculateRate(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		name      string
 		base      string
@@ -148,6 +154,8 @@ func TestCalculateRate(t *testing.T) {
 }
 
 func TestNewQuote_ValidInput(t *testing.T) {
+	t.Parallel()
+
 	// Set up test data
 	var (
 		rateSource = []Currency{
@@ -190,6 +198,8 @@ func TestNewQuote_ValidInput(t *testing.T) {
 }
 
 func TestNewQuote_EmptyRateSource(t *testing.T) {
+	t.Parallel()
+
 	quote, err := NewQuote(nil, "USD", "USD", "EUR", decimal.NewFromInt(100), decimal.NewFromInt(5))
 	assert.Error(t, err)
 	assert.Nil(t, quote)

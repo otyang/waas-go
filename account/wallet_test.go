@@ -9,6 +9,8 @@ import (
 )
 
 func TestAccount_Wallets_and_all_its_assosiated_functions(t *testing.T) {
+	t.Parallel()
+
 	acc := &Account{
 		db: TestDB,
 	}

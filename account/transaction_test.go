@@ -11,6 +11,8 @@ import (
 )
 
 func TestAccount_Transaction_and_all_its_assosiated_functions(t *testing.T) {
+	t.Parallel()
+
 	a := &Account{
 		db: TestDB,
 	}
