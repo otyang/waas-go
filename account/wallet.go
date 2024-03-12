@@ -2,7 +2,6 @@ package account
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/otyang/waas-go"
@@ -26,25 +25,11 @@ func (acc *Account) GetWalletByUserIDAndCurrencyCode(ctx context.Context, userID
 }
 
 func (a *Account) UpdateWallet(ctx context.Context, wallet *waas.Wallet) (*waas.Wallet, error) {
-	oldVersionID := wallet.VersionId // extract oldVersionID. for concurrency locks
-	fmt.Println(oldVersionID, "======")
+	oldVersionID := wallet.VersionId      // extract oldVersionID. for concurrency locks
 	wallet.VersionId = waas.GenerateID(7) // newVId
 	wallet.UpdatedAt = time.Now()
 
-	//_, err := a.db.NewUpdate().Model(wallet).WherePK().Where("version_id = ?", oldVersionID).Exec(ctx)
 	_, err := a.db.NewUpdate().Model(wallet).WherePK().Where("version_id = ?", oldVersionID).Exec(ctx)
-	// if err != nil {
-	// 	panic(err)
-	// }
-
-	// v, err := a.GetWalletByID(context.Background(), wallet.ID)
-	// if err != nil {
-	// 	panic(err)
-	// }
-
-	// if v.VersionId == wallet.VersionId {
-	// 	panic("hello")
-	// }
 	return wallet, err
 }
 
@@ -58,7 +43,7 @@ func (a *Account) ListWallet(ctx context.Context, params waas.ListWalletsFilterP
 	}
 
 	if params.CurrencyCode != nil {
-		q.Where("currency_code = ?", params.CurrencyCode)
+		q.Where("lower(currency_code) = ?", params.CurrencyCode)
 	}
 
 	if params.IsFiat != nil {
