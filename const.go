@@ -1,6 +1,7 @@
 package waas
 
 import (
+	"context"
 	"errors"
 	"time"
 
@@ -45,3 +46,31 @@ const (
 	TransactionStatusFailed  TransactionStatus = "FAILED"
 	TransactionStatusSuccess TransactionStatus = "SUCCESS"
 )
+
+// IWalletRepository defines repository functions for managing wallets and transactions.
+type IAccountFeature interface {
+	// Currency
+	CreateCurrency(ctx context.Context, currency Currency) (*Currency, error)
+	UpdateCurrency(ctx context.Context, currency Currency) (*Currency, error)
+	ListCurrencies(ctx context.Context) ([]Currency, error)
+
+	// wallets
+	CreateWallet(ctx context.Context, wallet *Wallet) (*Wallet, error)
+	GetWalletByID(ctx context.Context, walletID string) (*Wallet, error)
+	GetWalletByUserIDAndCurrencyCode(ctx context.Context, userID, currencyCode string) (*Wallet, error)
+	UpdateWallet(ctx context.Context, wallet *Wallet) (*Wallet, error)
+	ListWallet(ctx context.Context, params ListWalletsFilterParams) ([]Wallet, error)
+
+	// Transaction Management
+	CreateTransaction(ctx context.Context, transaction *Transaction) (*Transaction, error)
+	GetTransaction(ctx context.Context, transactionID string) (*Transaction, error)
+	UpdateTransaction(ctx context.Context, transaction *Transaction) (*Transaction, error)
+	ListTransaction(ctx context.Context, limit int, params ListTransactionsFilterParams) ([]Transaction, error)
+
+	// actions
+	Credit(ctx context.Context, params CreditWalletParams) (*CreditWalletResponse, error)
+	Debit(ctx context.Context, params DebitWalletParams) (*DebitWalletResponse, error)
+	Swap(ctx context.Context, params SwapRequestParams) (*SwapWalletResponse, error)
+	Transfer(ctx context.Context, params TransferRequestParams) (*TransferResponse, error)
+	Reverse(ctx context.Context, transactionID string) (*ReverseResponse, error)
+}
