@@ -9,18 +9,25 @@ import (
 
 // IWalletRepository defines repository functions for managing wallets and transactions.
 type IAccountFeature interface {
-	WalletCreate(ctx context.Context, wallet Wallet) (*Wallet, error)
-	WalletGetByID(ctx context.Context, walletID string) (*Wallet, error)
-	WalletUpdate(ctx context.Context, wallet Wallet) (*Wallet, error)
-	WalletList(ctx context.Context, params ListWalletsFilterParams) ([]Wallet, error)
-	WalletGetByUserIDAndCurrencyCode(ctx context.Context, userID, currencyCode string) (*Wallet, error)
+	// Currency
+	CreateCurrency(ctx context.Context, currency Currency) (*Currency, error)
+	UpdateCurrency(ctx context.Context, currency Currency) (*Currency, error)
+	ListCurrencies(ctx context.Context) ([]Currency, error)
+
+	// wallets
+	CreateWallet(ctx context.Context, wallet *Wallet) (*Wallet, error)
+	GetWalletByID(ctx context.Context, walletID string) (*Wallet, error)
+	GetWalletByUserIDAndCurrencyCode(ctx context.Context, userID, currencyCode string) (*Wallet, error)
+	UpdateWallet(ctx context.Context, wallet *Wallet) (*Wallet, error)
+	ListWallet(ctx context.Context, params ListWalletsFilterParams) ([]Wallet, error)
 
 	// Transaction Management
-	TransactionCreate(ctx context.Context, transaction Transaction) (*Transaction, error)
-	TransactionGetByID(ctx context.Context, transactionID string) (*Transaction, error)
-	TransactionUpdate(ctx context.Context, transaction Transaction) (*Transaction, error)
-	TransactionList(ctx context.Context, params ListTransactionsFilterParams) ([]Transaction, error)
+	CreateTransaction(ctx context.Context, transaction *Transaction) (*Transaction, error)
+	GetTransaction(ctx context.Context, transactionID string) (*Transaction, error)
+	UpdateTransaction(ctx context.Context, transaction *Transaction) (*Transaction, error)
+	ListTransaction(ctx context.Context, limit int, params ListTransactionsFilterParams) ([]Transaction, error)
 
+	// actions
 	Credit(ctx context.Context, params CreditWalletParams) (*CreditWalletResponse, error)
 	Debit(ctx context.Context, params DebitWalletParams) (*DebitWalletResponse, error)
 	Swap(ctx context.Context, params SwapRequestParams) (*SwapWalletResponse, error)
