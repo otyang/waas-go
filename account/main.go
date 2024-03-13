@@ -50,29 +50,3 @@ func (a *Account) NewWithTx(tx bun.Tx) *Account {
 		db: tx,
 	}
 }
-
-func (a *Account) WithTxBulkUpdateWalletAndTransaction(ctx context.Context, wallets []*waas.Wallet, transactions []*waas.Transaction) error {
-	return a.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
-		for _, wallet := range wallets {
-			if wallet == nil {
-				continue
-			}
-			_, err := a.NewWithTx(tx).UpdateWallet(ctx, wallet)
-			if err != nil {
-				return err
-			}
-		}
-
-		for _, transaction := range transactions {
-			if transaction == nil {
-				continue
-			}
-			_, err := a.NewWithTx(tx).CreateTransaction(ctx, transaction)
-			if err != nil {
-				return err
-			}
-		}
-
-		return nil
-	})
-}

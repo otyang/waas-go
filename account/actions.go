@@ -4,10 +4,34 @@ import (
 	"context"
 
 	"github.com/otyang/waas-go"
+	"github.com/uptrace/bun"
 )
 
-// decimal places issues
-// validation of params
+func (a *Account) WithTxBulkUpdateWalletAndTransaction(ctx context.Context, wallets []*waas.Wallet, transactions []*waas.Transaction) error {
+	return a.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
+		for _, wallet := range wallets {
+			if wallet == nil {
+				continue
+			}
+			_, err := a.NewWithTx(tx).UpdateWallet(ctx, wallet)
+			if err != nil {
+				return err
+			}
+		}
+
+		for _, transaction := range transactions {
+			if transaction == nil {
+				continue
+			}
+			_, err := a.NewWithTx(tx).CreateTransaction(ctx, transaction)
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+}
 
 func (a *Account) Credit(ctx context.Context, params waas.CreditWalletParams) (*waas.CreditWalletResponse, error) {
 	wallet, err := a.GetWalletByID(ctx, params.WalletID)
