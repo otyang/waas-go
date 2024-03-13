@@ -1,4 +1,4 @@
-package currency
+package waas
 
 import (
 	"time"
@@ -6,9 +6,8 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-// Currency structure
 type Currency struct {
-	Code          string          `json:"code"`
+	Code          string          `json:"code" bun:",pk"`
 	Name          string          `json:"name"`
 	Symbol        string          `json:"symbol"`
 	IsFiat        bool            `json:"isFiat"`

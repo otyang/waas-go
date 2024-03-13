@@ -95,9 +95,9 @@ func (w *Wallet) CreditBalance(amount, fee decimal.Decimal) error {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 
-	if w.IsFrozen {
-		// accept money when we crediting
-	}
+	// if w.IsFrozen {
+	// 	// accept money when we crediting
+	// }
 
 	if amount.LessThanOrEqual(decimal.Zero) || fee.LessThan(decimal.Zero) {
 		return ErrWalletInvalidAmount

@@ -1,12 +1,12 @@
 package currency
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
 
+	"github.com/otyang/waas-go"
 	"github.com/shopspring/decimal"
 )
 
@@ -17,24 +17,8 @@ var (
 	ErrBaseCurrencyNotFound = errors.New("base currency not found")
 )
 
-// NewCurrencies creates a Currencies instance from a source of rates.
-func NewCurrencies[T any](sourceRates []T) ([]Currency, error) {
-	b, err := json.Marshal(sourceRates)
-	if err != nil {
-		return nil, err
-	}
-
-	var currencies []Currency
-	if err := json.Unmarshal(b, &currencies); err != nil {
-		return nil, err
-	}
-
-	if len(currencies) == 0 {
-		return nil, ErrEmptyCurrencySource
-	}
-
-	return currencies, nil
-}
+// Currency structure
+type Currency = waas.Currency
 
 // FindCurrency finds a currency by its ISO code.
 func FindCurrency(currencies []Currency, code string) (*Currency, error) {
@@ -176,3 +160,25 @@ func NewQuote(rateSource []Currency, baseCurrency, fromCurrency, toCurrency stri
 		Date:             time.Now(),
 	}, nil
 }
+
+// type Currency struct {
+// 	Code          string          `json:"code" bun:",pk"`
+// 	Name          string          `json:"name"`
+// 	Symbol        string          `json:"symbol"`
+// 	IsFiat        bool            `json:"isFiat"`
+// 	IsStableCoin  bool            `json:"isStableCoin"`
+// 	IconURL       string          `json:"iconUrl"`
+// 	Precision     int             `json:"precision"`
+// 	Disabled      bool            `json:"disabled"`
+// 	CanSell       bool            `json:"canSell"`
+// 	CanBuy        bool            `json:"canBuy"`
+// 	CanSwap       bool            `json:"canSwap"`
+// 	CanDeposit    bool            `json:"canDeposit"`
+// 	CanWithdraw   bool            `json:"canWithdraw"`
+// 	FeeDeposit    decimal.Decimal `json:"depositfee"`
+// 	FeeWithdrawal decimal.Decimal `json:"withdrawalfee"`
+// 	RateBuy       decimal.Decimal `json:"rateBuy"`
+// 	RateSell      decimal.Decimal `json:"rateSell"`
+// 	CreatedAt     time.Time       `json:"createdAt"`
+// 	UpdatedAt     time.Time       `json:"updatedAt"`
+// }

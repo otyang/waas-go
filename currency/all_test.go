@@ -9,40 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewCurrencies(t *testing.T) {
-	t.Parallel()
-
-	// Valid data
-	validRates := []struct {
-		Code     string
-		RateBuy  decimal.Decimal
-		RateSell decimal.Decimal
-	}{
-		{"USD", decimal.NewFromInt(100), decimal.NewFromInt(101)},
-		{"EUR", decimal.NewFromInt(120), decimal.NewFromInt(121)},
-	}
-
-	currencies, err := NewCurrencies(validRates)
-	assert.NoError(t, err)
-	assert.Equal(t, len(currencies), 2)
-
-	// Invalid data
-	invalidRates := []string{"invalid data"}
-	_, err = NewCurrencies(invalidRates)
-	assert.Error(t, err)
-
-	// Empty source should return error
-	_, err = NewCurrencies[string](nil)
-	assert.Error(t, err)
-	assert.Equal(t, err, ErrEmptyCurrencySource)
-
-	// Valid source should create currencies instance
-	source := []struct{ Code string }{{Code: "USD"}}
-	currencies, err = NewCurrencies(source)
-	assert.NoError(t, err)
-	assert.Equal(t, len(currencies), 1)
-}
-
 func TestFindCurrency(t *testing.T) {
 	t.Parallel()
 
