@@ -31,7 +31,7 @@ type Transaction struct {
 	OriginalFee      decimal.Decimal   `json:"originalFee" bun:"type:decimal(24,8),notnull"`
 	Type             TransactionType   `json:"type" bun:",notnull"`
 	Status           TransactionStatus `json:"status" bun:",notnull"`
-	Narration        *string           `json:"narration" bun:",notnull"`
+	Narration        *string           `json:"narration"`
 	Reversed         bool              `json:"reversed"`
 	CounterpartyID   *string           `json:"counterpartyId"`
 	CreatedAt        time.Time         `json:"createdAt" bun:",notnull"`

@@ -88,14 +88,14 @@ func (a *Account) ListTransaction(ctx context.Context, limit int, params waas.Li
 	// return transactions, newCursor(transactions, limit), nil
 }
 
-func newCursor(tns []waas.Transaction, limit int) {
-	if len(tns) == 0 {
-		return // noCursor
-	}
+// func newCursor(tns []waas.Transaction, limit int) {
+// 	if len(tns) == 0 {
+// 		return // noCursor
+// 	}
 
-	if len(tns) <= limit {
-		return // o, limit-1, hasMore=false
-	}
+// 	if len(tns) <= limit {
+// 		return // o, limit-1, hasMore=false
+// 	}
 
-	return // 0, limit , hasMore=true
-}
+// 	return // 0, limit , hasMore=true
+// }

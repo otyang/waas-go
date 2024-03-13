@@ -119,4 +119,6 @@ func TestAccount_Swap(t *testing.T) {
 	assert.Equal(t, waas.TransactionTypeSwap, got.ToTransaction.Type)
 	assert.Nil(t, got.FromTransaction.Narration)
 	assert.Nil(t, got.ToTransaction.Narration)
+
+	// t.Errorf("%+v \n %+v \n %+v \n %+v", got.FromWallet, got.ToWallet, got.ToTransaction, got.FromTransaction)
 }

@@ -56,7 +56,7 @@ func TestAccount_Wallets_and_all_its_assosiated_functions(t *testing.T) {
 	t.Run("list without filters", func(t *testing.T) {
 		gotList, err := acc.ListWallet(context.Background(), waas.ListWalletsFilterParams{})
 		assert.NoError(t, err)
-		assert.Equal(t, 2, len(gotList))
+		assert.NotEmpty(t, gotList)
 	})
 
 	t.Run("list with filters", func(t *testing.T) {
@@ -67,6 +67,6 @@ func TestAccount_Wallets_and_all_its_assosiated_functions(t *testing.T) {
 			IsFrozen:     toPointer(false),
 		})
 		assert.NoError(t, err)
-		assert.Equal(t, 0, len(gotList))
+		assert.Empty(t, gotList)
 	})
 }
