@@ -19,14 +19,13 @@ var (
 )
 
 func setUp() *bun.DB {
-	ctx := context.Background()
-
 	db, err := dbstore.NewDBConnection(test_driver, test_dsn, 1, true)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = db.ResetModel(ctx, (*waas.Transaction)(nil), (*waas.Wallet)(nil), (*currency.Currency)(nil))
+	// err = db.ResetModel(ctx, (*waas.Transaction)(nil), (*waas.Wallet)(nil), (*currency.Currency)(nil))
+	err = NewWithMigration(db)
 	if err != nil {
 		log.Fatal(err)
 	}

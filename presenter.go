@@ -1,4 +1,4 @@
-package presenter
+package waas
 
 import (
 	"time"
@@ -8,30 +8,32 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-type NewWalletResponse struct {
-	ID                    string            `json:"id"`
-	CustomerID            string            `json:"customerId"`
-	AvailableBalance      decimal.Decimal   `json:"availableBalance"`
-	AvailableBalanceInUSD decimal.Decimal   `json:"availableBalanceInUSD"`
-	IsFrozen              bool              `json:"isFrozen"`
-	CreatedAt             time.Time         `json:"createdAt"`
-	UpdatedAt             time.Time         `json:"updatedAt"`
-	Currency              currency.Currency `json:"currency"`
-}
+type (
+	NewWalletResponse struct {
+		ID                    string            `json:"id"`
+		CustomerID            string            `json:"customerId"`
+		AvailableBalance      decimal.Decimal   `json:"availableBalance"`
+		AvailableBalanceInUSD decimal.Decimal   `json:"availableBalanceInUSD"`
+		IsFrozen              bool              `json:"isFrozen"`
+		CreatedAt             time.Time         `json:"createdAt"`
+		UpdatedAt             time.Time         `json:"updatedAt"`
+		Currency              currency.Currency `json:"currency"`
+	}
 
-type TotalBalanceResponse struct {
-	CurrencyCode   string
-	CurrencySymbol string
-	LogoURL        string
-	Total          decimal.Decimal
-}
+	TotalBalanceResponse struct {
+		CurrencyCode   string
+		CurrencySymbol string
+		LogoURL        string
+		Total          decimal.Decimal
+	}
 
-type AllWalletsResponse struct {
-	Wallets       []NewWalletResponse    `json:"wallets"`
-	TotalBalances []TotalBalanceResponse `json:"totalBalances"`
-}
+	AllWalletsResponse struct {
+		Wallets       []NewWalletResponse    `json:"wallets"`
+		TotalBalances []TotalBalanceResponse `json:"totalBalances"`
+	}
+)
 
-func Wallets(wallets []*waas.Wallet, currencies []currency.Currency) (*AllWalletsResponse, error) {
+func PresentWallets(wallets []*waas.Wallet, currencies []currency.Currency) (*AllWalletsResponse, error) {
 	var (
 		usdTotalBalance decimal.Decimal
 		ws              []NewWalletResponse
