@@ -55,4 +55,10 @@ func TestAccount_CreateCurrency(t *testing.T) {
 	assert.Equal(t, gotNewNGN.Name, currencies[0].Name)
 	assert.Equal(t, gotNewNGN.RateBuy.String(), currencies[0].RateBuy.String())
 	assert.Equal(t, gotNewNGN.RateSell.String(), currencies[0].RateSell.String())
+
+	err = acc.DeleteCurrency(context.Background(), "NGN")
+	assert.NoError(t, err)
+	currencies, err = acc.ListCurrencies(context.Background())
+	assert.NoError(t, err)
+	assert.Len(t, currencies, 0)
 }

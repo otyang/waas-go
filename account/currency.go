@@ -30,3 +30,8 @@ func (a *Account) ListCurrencies(ctx context.Context) ([]currency.Currency, erro
 
 	return currencies, nil
 }
+
+func (a *Account) DeleteCurrency(ctx context.Context, currencyCode string) error {
+	_, err := a.db.NewDelete().Model(&currency.Currency{Code: currencyCode}).WherePK().Exec(ctx)
+	return err
+}
