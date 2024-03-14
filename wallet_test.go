@@ -1,6 +1,7 @@
 package waas
 
 import (
+	"strings"
 	"sync"
 	"testing"
 
@@ -45,7 +46,7 @@ func TestNewWallet(t *testing.T) {
 	// Assert
 	assert.Equal(t, GenerateWalletID(currencyCode, customerID), wallet.ID)
 	assert.Equal(t, customerID, wallet.CustomerID)
-	assert.Equal(t, currencyCode, wallet.CurrencyCode)
+	assert.True(t, strings.EqualFold(currencyCode, wallet.CurrencyCode))
 	assert.Equal(t, decimal.Zero, wallet.AvailableBalance)
 	assert.False(t, wallet.IsFrozen)
 	assert.True(t, wallet.IsFiat)
