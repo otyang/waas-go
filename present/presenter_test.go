@@ -1,4 +1,4 @@
-package waas
+package present
 
 import (
 	"fmt"
@@ -67,8 +67,9 @@ func Test_generateWalletResponse_NormalConversion(t *testing.T) {
 	wallet := &waas.Wallet{
 		ID:               "wallet123",
 		CustomerID:       "customer456",
-		AvailableBalance: decimal.NewFromInt(1000), // 10.00
-		IsFrozen:         false,
+		AvailableBalance: decimal.NewFromInt(1000),
+		LienBalance:      decimal.NewFromInt(100),
+		Status:           waas.WalletStatusActive,
 		CreatedAt:        time.Now(),
 		UpdatedAt:        time.Now(),
 	}
@@ -79,14 +80,15 @@ func Test_generateWalletResponse_NormalConversion(t *testing.T) {
 		RateSell:  decimal.NewFromInt(19500), // $19,500 per BTC
 	}
 
-	expectedAvailableBalanceInUSD := wallet.AvailableBalance.Div(curr.RateBuy).RoundCeil(int32(curr.Precision))
+	expectedTotalBalanceInUSD := wallet.TotalBalance().Div(curr.RateBuy).RoundCeil(int32(curr.Precision))
 
 	response := generateWalletResponse(wallet, curr)
 
 	// Assertions
 	assert.Equal(t, response.ID, wallet.ID)
-	assert.Equal(t, response.IsFrozen, wallet.IsFrozen)
+	assert.Equal(t, response.Status, wallet.Status)
 	assert.Equal(t, response.CustomerID, wallet.CustomerID)
 	assert.Equal(t, response.AvailableBalance.String(), decimal.NewFromInt(1000).String())
-	assert.Equal(t, response.AvailableBalanceInUSD.String(), expectedAvailableBalanceInUSD.String())
+	assert.Equal(t, response.LienBalance.String(), decimal.NewFromInt(100).String())
+	assert.Equal(t, response.TotalBalanceInUSD.String(), expectedTotalBalanceInUSD.String())
 }

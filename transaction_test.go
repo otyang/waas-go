@@ -43,6 +43,8 @@ func TestTransaction_SetNarrationAndCounterPartyID(t *testing.T) {
 }
 
 func TestTransaction_canBeReversed(t *testing.T) {
+	timePtr := time.Now()
+
 	// Test Cases
 	testCases := []struct {
 		name          string
@@ -52,8 +54,8 @@ func TestTransaction_canBeReversed(t *testing.T) {
 		{
 			name: "Valid Reversal",
 			transaction: &Transaction{
-				Type:     TransactionTypeWithdrawal,
-				Reversed: false,
+				Type:   TransactionTypeWithdrawal,
+				Status: TransactionStatusSuccess,
 			},
 			expectedError: nil,
 		},
@@ -65,18 +67,17 @@ func TestTransaction_canBeReversed(t *testing.T) {
 		{
 			name: "Invalid Type (Deposit)",
 			transaction: &Transaction{
-				Type:     TransactionTypeDeposit, // Not a withdrawal
-				Reversed: false,
+				Type: TransactionTypeDeposit, // Not a withdrawal
 			},
-			expectedError: ErrUnsupportedReversalType,
+			expectedError: ErrTransactionUnsupportedReversalType,
 		},
 		{
 			name: "Already Reversed",
 			transaction: &Transaction{
-				Type:     TransactionTypeWithdrawal,
-				Reversed: true,
+				Type:       TransactionTypeWithdrawal,
+				ReversedAt: &timePtr,
 			},
-			expectedError: ErrAlreadyReversedTx,
+			expectedError: ErrTransactionAlreadyReversed,
 		},
 	}
 
@@ -91,6 +92,8 @@ func TestTransaction_canBeReversed(t *testing.T) {
 
 func TestTransaction_Reverse(t *testing.T) {
 	t.Parallel()
+
+	timePtr := time.Now()
 
 	tests := []struct {
 		name      string
@@ -111,21 +114,21 @@ func TestTransaction_Reverse(t *testing.T) {
 			tx:        &Transaction{Type: TransactionTypeDeposit, Status: TransactionStatusSuccess, IsDebit: false, Amount: decimal.NewFromFloat(100), Fee: decimal.NewFromFloat(5)},
 			wallet:    &Wallet{AvailableBalance: decimal.NewFromFloat(500)},
 			wantErr:   true,
-			wantError: ErrUnsupportedReversalType,
+			wantError: ErrTransactionUnsupportedReversalType,
 		},
 		{
 			name:      "Error on reversing non-withdrawal transaction",
 			tx:        &Transaction{Type: TransactionTypeDeposit, Status: TransactionStatusSuccess, IsDebit: false, Amount: decimal.NewFromFloat(100), Fee: decimal.NewFromFloat(5)},
 			wallet:    &Wallet{},
 			wantErr:   true,
-			wantError: ErrUnsupportedReversalType,
+			wantError: ErrTransactionUnsupportedReversalType,
 		},
 		{
-			name:      "Error on reversing settled transaction",
-			tx:        &Transaction{Type: TransactionTypeWithdrawal, Status: TransactionStatusSuccess, IsDebit: true, Amount: decimal.NewFromFloat(100), Fee: decimal.NewFromFloat(5), Reversed: true},
+			name:      "Error on reversing already revered transaction",
+			tx:        &Transaction{Type: TransactionTypeWithdrawal, ReversedAt: &timePtr, IsDebit: true, Amount: decimal.NewFromFloat(100), Fee: decimal.NewFromFloat(5)},
 			wallet:    &Wallet{},
 			wantErr:   true,
-			wantError: ErrAlreadyReversedTx,
+			wantError: ErrTransactionAlreadyReversed,
 		},
 		{
 			name:      "Error on reversing nil transaction",
@@ -173,7 +176,6 @@ func Test_NewTransactionForCreditEntry(t *testing.T) {
 	assert.Equal(t, false, transaction.IsDebit)
 	assert.Equal(t, amount, transaction.Amount)
 	assert.Equal(t, fee, transaction.Fee)
-	assert.Equal(t, amount, transaction.TotalAmount)
 	assert.Equal(t, txnType, transaction.Type)
 	assert.Equal(t, TransactionStatusSuccess, transaction.Status)
 	assert.Equal(t, mockWallet.AvailableBalance, transaction.BalanceAfter)
@@ -203,7 +205,6 @@ func Test_NewTransactionForDebitEntry(t *testing.T) {
 	assert.Equal(t, true, transaction.IsDebit)
 	assert.Equal(t, amount, transaction.Amount)
 	assert.Equal(t, fee, transaction.Fee)
-	assert.Equal(t, amount.Add(fee), transaction.TotalAmount)
 	assert.Equal(t, txnType, transaction.Type)
 	assert.Equal(t, TransactionStatusFailed, transaction.Status)
 	assert.Equal(t, mockWallet.AvailableBalance, transaction.BalanceAfter)

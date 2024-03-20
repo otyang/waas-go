@@ -18,25 +18,21 @@ func TestAccount_Transaction_and_all_its_assosiated_functions(t *testing.T) {
 	}
 
 	txn := waas.Transaction{
-		ID:               "txn_12345678",               // Generate a unique transaction ID
-		CustomerID:       "cust_9876543",               // Some customer identifier
-		WalletID:         "wallet_54321",               // Some wallet identifier
-		IsDebit:          true,                         // Credit transaction
-		Currency:         "USD",                        // Or any other relevant currency code (e.g., "NGN")
-		Amount:           decimal.NewFromFloat(100.50), // Amount of the transaction
-		Fee:              decimal.NewFromFloat(2.50),   // Transaction fee
-		TotalAmount:      decimal.NewFromFloat(102.50),
-		BalanceAfter:     decimal.NewFromFloat(250.25), // Assuming a previous balance
-		OriginalCurrency: "",
-		OriginalAmount:   decimal.Decimal{},
-		OriginalFee:      decimal.Decimal{},
-		Type:             waas.TransactionTypeSwap,
-		Status:           waas.TransactionStatusNew,
-		Narration:        toPointer("Payment for Order ABC"),
-		Reversed:         false,
-		CounterpartyID:   toPointer("tx_123456"),
-		CreatedAt:        time.Time{},
-		UpdatedAt:        time.Time{},
+		ID:         "txn_12345678",               // Generate a unique transaction ID
+		CustomerID: "cust_9876543",               // Some customer identifier
+		WalletID:   "wallet_54321",               // Some wallet identifier
+		IsDebit:    true,                         // Credit transaction
+		Currency:   "USD",                        // Or any other relevant currency code (e.g., "NGN")
+		Amount:     decimal.NewFromFloat(100.50), // Amount of the transaction
+		Fee:        decimal.NewFromFloat(2.50),   // Transaction fee
+		//	TotalAmount:    decimal.NewFromFloat(102.50),
+		BalanceAfter:   decimal.NewFromFloat(250.25), // Assuming a previous balance
+		Type:           waas.TransactionTypeSwap,
+		Status:         waas.TransactionStatusNew,
+		Narration:      toPointer("Payment for Order ABC"),
+		CounterpartyID: toPointer("tx_123456"),
+		CreatedAt:      time.Time{},
+		UpdatedAt:      time.Time{},
 	}
 
 	_, err := a.CreateTransaction(context.Background(), &txn)
@@ -49,6 +45,14 @@ func TestAccount_Transaction_and_all_its_assosiated_functions(t *testing.T) {
 	})
 
 	t.Run("update transaction", func(t *testing.T) {
+		txn.WalletID = "wont_update_this_12345"
+		got, err := a.UpdateTransactionStatus(context.Background(), txn.ID, waas.TransactionStatusFailed)
+		assert.NoError(t, err)
+		assert.NotEqual(t, "wont_update_this_12345", got.WalletID)
+		assert.Equal(t, waas.TransactionStatusFailed, got.Status)
+	})
+
+	t.Run("update transaction status", func(t *testing.T) {
 		txn.WalletID = "new_cust_id_12345"
 		got, err := a.UpdateTransaction(context.Background(), &txn)
 		assert.NoError(t, err)

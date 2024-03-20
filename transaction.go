@@ -7,47 +7,49 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+type TransactionType string
+
+const (
+	TransactionTypeSwap       TransactionType = "SWAP"
+	TransactionTypeTransfer   TransactionType = "TRANSFER"
+	TransactionTypeDeposit    TransactionType = "DEPOSIT"
+	TransactionTypeWithdrawal TransactionType = "WITHDRAWAL"
+)
+
+type TransactionStatus string
+
+const (
+	TransactionStatusNew     TransactionStatus = "NEW"
+	TransactionStatusFailed  TransactionStatus = "FAILED"
+	TransactionStatusPending TransactionStatus = "PENDING"
+	TransactionStatusSuccess TransactionStatus = "SUCCESS"
+)
+
 // Transaction errors
 var (
-	ErrInvalidTransactionType   = NewWaasError("invalid transaction type")
-	ErrInvalidTransactionStatus = NewWaasError("invalid transaction status")
-	ErrInvalidTransactionObject = NewWaasError("invalid transaction: nil transaction object")
-	ErrUnsupportedReversalType  = NewWaasError("unsupported transaction type for reversal")
-	ErrAlreadyReversedTx        = NewWaasError("cannot reverse an already reversed/settled transaction")
+	ErrInvalidTransactionObject           = NewWaasError("invalid transaction: nil transaction object")
+	ErrTransactionUnsupportedReversalType = NewWaasError("unsupported transaction type for reversal")
+	ErrTransactionAlreadyReversed         = NewWaasError("cannot reverse an already reversed transaction")
 )
 
 type Transaction struct {
-	ID               string            `json:"id" bun:"id,pk"`
-	CustomerID       string            `json:"customerId" bun:",notnull"`
-	WalletID         string            `json:"walletId" bun:",notnull"`
-	IsDebit          bool              `json:"isDebit" bun:",notnull"`
-	Currency         string            `json:"currency" bun:",notnull"`
-	Amount           decimal.Decimal   `json:"amount" bun:"type:decimal(24,8),notnull"`
-	Fee              decimal.Decimal   `json:"fee" bun:"type:decimal(24,8),notnull"`
-	TotalAmount      decimal.Decimal   `json:"totalAmount" bun:"type:decimal(24,8),notnull"`
-	BalanceAfter     decimal.Decimal   `json:"balanceAfter" bun:"type:decimal(24,8),notnull"`
-	OriginalCurrency string            `json:"originalCurrency" bun:",notnull"`
-	OriginalAmount   decimal.Decimal   `json:"originalAmount" bun:"type:decimal(24,8),notnull"`
-	OriginalFee      decimal.Decimal   `json:"originalFee" bun:"type:decimal(24,8),notnull"`
-	Type             TransactionType   `json:"type" bun:",notnull"`
-	Status           TransactionStatus `json:"status" bun:",notnull"`
-	Narration        *string           `json:"narration"`
-	Reversed         bool              `json:"reversed"`
-	CounterpartyID   *string           `json:"counterpartyId"`
-	CreatedAt        time.Time         `json:"createdAt" bun:",notnull"`
-	UpdatedAt        time.Time         `json:"updatedAt" bun:",notnull"`
+	ID             string            `json:"id" bun:"id,pk"`
+	CustomerID     string            `json:"customerId" bun:",notnull"`
+	WalletID       string            `json:"walletId" bun:",notnull"`
+	IsDebit        bool              `json:"isDebit" bun:",notnull"`
+	Currency       string            `json:"currency" bun:",notnull"`
+	Amount         decimal.Decimal   `json:"amount" bun:"type:decimal(24,8),notnull"`
+	Fee            decimal.Decimal   `json:"fee" bun:"type:decimal(24,8),notnull"`
+	BalanceAfter   decimal.Decimal   `json:"balanceAfter" bun:"type:decimal(24,8),notnull"`
+	Type           TransactionType   `json:"type" bun:",notnull"`
+	Status         TransactionStatus `json:"status" bun:",notnull"`
+	Narration      *string           `json:"narration"`
+	CounterpartyID *string           `json:"counterpartyId"`
+	ReversedAt     *time.Time        `json:"reversedAt"`
+	CreatedAt      time.Time         `json:"createdAt" bun:",notnull"`
+	UpdatedAt      time.Time         `json:"updatedAt" bun:",notnull"`
 }
 
-// SetNarration sets the narration of the transaction.
-func (t *Transaction) SetOriginalDetails(originalCurrency string, originalAmount, originalFee decimal.Decimal) *Transaction {
-	t.OriginalCurrency = originalCurrency
-	t.OriginalAmount = originalAmount
-	t.OriginalFee = originalFee
-
-	return t
-}
-
-// SetNarration sets the narration of the transaction.
 func (t *Transaction) SetNarration(narration string) *Transaction {
 	if trimmedNarration := strings.TrimSpace(narration); trimmedNarration != "" {
 		t.Narration = &trimmedNarration
@@ -68,13 +70,13 @@ func (t *Transaction) canBeReversed() error {
 		return ErrInvalidTransactionObject
 	}
 
-	if t.Reversed {
-		return ErrAlreadyReversedTx
+	if t.ReversedAt != nil {
+		return ErrTransactionAlreadyReversed
 	}
 
 	// only withdraw or debit transaction can be reversed
 	if t.Type != TransactionTypeWithdrawal {
-		return ErrUnsupportedReversalType
+		return ErrTransactionUnsupportedReversalType
 	}
 
 	return nil
@@ -85,33 +87,16 @@ func (t *Transaction) Reverse(wallet *Wallet) (*ReverseResponse, error) {
 		return nil, err
 	}
 
-	var newEntry *Transaction
-
 	if t.IsDebit {
 		if err := wallet.CreditBalance(t.Amount, t.Fee); err != nil {
 			return nil, err
 		}
-
-		newEntry = NewTransactionForCreditEntry(wallet, t.Amount, t.Fee, t.Type)
 	} else {
 		if err := wallet.DebitBalance(t.Amount, t.Fee); err != nil {
 			return nil, err
 		}
-
-		newEntry = NewTransactionForDebitEntry(wallet, t.Amount, t.Fee, t.Type, TransactionStatusSuccess)
 	}
-
-	newEntry.SetCounterpartyID(t.ID)
-	newEntry.Reversed = true
-	t.Reversed = true
-	t.Status = TransactionStatusFailed
-	t.SetCounterpartyID(newEntry.ID)
-
-	return &ReverseResponse{
-		OldTx:  t,
-		NewTx:  newEntry,
-		Wallet: wallet,
-	}, nil
+	return NewTransactionForReverseEntry(t.Amount, t.Fee, wallet, t), nil
 }
 
 // Creates a new credit transaction entry.
@@ -124,12 +109,10 @@ func NewTransactionForCreditEntry(wallet *Wallet, amount, fee decimal.Decimal, t
 		Currency:       wallet.CurrencyCode,
 		Amount:         amount,
 		Fee:            fee,
-		TotalAmount:    amount,
 		BalanceAfter:   wallet.AvailableBalance,
 		Type:           txnType,
 		Status:         TransactionStatusSuccess,
 		Narration:      nil,
-		Reversed:       false,
 		CounterpartyID: nil,
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
@@ -147,13 +130,11 @@ func NewTransactionForDebitEntry(wallet *Wallet, amount, fee decimal.Decimal, tx
 		IsDebit:        true,
 		Amount:         amount,
 		Fee:            fee,
-		TotalAmount:    amount.Add(fee),
 		BalanceAfter:   wallet.AvailableBalance,
 		Type:           txnType,
 		Status:         txnStatus,
 		Narration:      nil,
 		CounterpartyID: nil,
-		Reversed:       false,
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
 	}
@@ -175,12 +156,25 @@ func NewTransactionForSwap(fromWallet, toWallet *Wallet, debitAmount, creditAmou
 	de := NewTransactionForDebitEntry(fromWallet, debitAmount, fee, TransactionTypeSwap, TransactionStatusSuccess)
 	ce := NewTransactionForCreditEntry(toWallet, creditAmount, decimal.Zero, TransactionTypeSwap)
 
-	//
-	de.SetOriginalDetails(toWallet.CurrencyCode, creditAmount, fee)
-	ce.SetOriginalDetails(fromWallet.CurrencyCode, debitAmount, decimal.Zero)
-
 	de.SetCounterpartyID(ce.ID)
 	ce.SetCounterpartyID(de.ID)
 
 	return de, ce
+}
+
+func NewTransactionForReverseEntry(amount, fee decimal.Decimal, wallet *Wallet, oldTX *Transaction) *ReverseResponse {
+	var newTX *Transaction
+
+	if oldTX.IsDebit {
+		newTX = NewTransactionForCreditEntry(wallet, amount, fee, oldTX.Type)
+	} else {
+		newTX = NewTransactionForDebitEntry(wallet, amount, fee, oldTX.Type, TransactionStatusSuccess)
+	}
+
+	newTX.SetCounterpartyID(oldTX.ID)
+	oldTX.SetCounterpartyID(newTX.ID)
+	t := time.Now()
+	oldTX.ReversedAt = &t
+
+	return &ReverseResponse{OldTx: oldTX, NewTx: newTX, Wallet: wallet}
 }

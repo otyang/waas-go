@@ -85,6 +85,7 @@ type (
 		CurrencyCode *string
 		IsFiat       *bool
 		IsFrozen     *bool
+		Status       *WalletStatus
 	}
 
 	ListTransactionsFilterParams struct {

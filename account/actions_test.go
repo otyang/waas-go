@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccount_WithTxBulkUpdateWalletAndTransaction(t *testing.T) {
+func TestAccount_WithTxBulkUpdateWalletAndInsertTransaction(t *testing.T) {
 	t.Parallel()
 
 	acc := &Account{
@@ -29,7 +29,7 @@ func TestAccount_WithTxBulkUpdateWalletAndTransaction(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	err = acc.WithTxBulkUpdateWalletAndTransaction(
+	err = acc.WithTxBulkUpdateWalletAndInsertTransaction(
 		context.Background(), []*waas.Wallet{got.Wallet}, []*waas.Transaction{got.Transaction},
 	)
 	assert.Error(t, err)

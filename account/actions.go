@@ -7,7 +7,7 @@ import (
 	"github.com/uptrace/bun"
 )
 
-func (a *Account) WithTxBulkUpdateWalletAndTransaction(ctx context.Context, wallets []*waas.Wallet, transactions []*waas.Transaction) error {
+func (a *Account) WithTxBulkUpdateWalletAndInsertTransaction(ctx context.Context, wallets []*waas.Wallet, transactions []*waas.Transaction) error {
 	return a.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
 		for _, wallet := range wallets {
 			if wallet == nil {
@@ -47,7 +47,7 @@ func (a *Account) Credit(ctx context.Context, params waas.CreditWalletParams) (*
 	transaction := waas.NewTransactionForCreditEntry(wallet, params.Amount, params.Fee, params.Type)
 	transaction.SetNarration(params.Narration)
 
-	err = a.WithTxBulkUpdateWalletAndTransaction(ctx, []*waas.Wallet{wallet}, []*waas.Transaction{transaction})
+	err = a.WithTxBulkUpdateWalletAndInsertTransaction(ctx, []*waas.Wallet{wallet}, []*waas.Transaction{transaction})
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +69,7 @@ func (a *Account) Debit(ctx context.Context, params waas.DebitWalletParams) (*wa
 	transaction := waas.NewTransactionForDebitEntry(wallet, params.Amount, params.Fee, params.Type, params.Status)
 	transaction.SetNarration(params.Narration)
 
-	err = a.WithTxBulkUpdateWalletAndTransaction(ctx, []*waas.Wallet{wallet}, []*waas.Transaction{transaction})
+	err = a.WithTxBulkUpdateWalletAndInsertTransaction(ctx, []*waas.Wallet{wallet}, []*waas.Transaction{transaction})
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func (a *Account) Transfer(ctx context.Context, params waas.TransferRequestParam
 	fromTrsn.SetNarration(params.Narration)
 	toTrsn.SetNarration(params.Narration)
 
-	err = a.WithTxBulkUpdateWalletAndTransaction(ctx, []*waas.Wallet{fromWallet, toWallet}, []*waas.Transaction{fromTrsn, toTrsn})
+	err = a.WithTxBulkUpdateWalletAndInsertTransaction(ctx, []*waas.Wallet{fromWallet, toWallet}, []*waas.Transaction{fromTrsn, toTrsn})
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +128,7 @@ func (a *Account) Swap(ctx context.Context, params waas.SwapRequestParams) (*waa
 
 	fromTrsn, toTrsn := waas.NewTransactionForSwap(fromWallet, toWallet, params.FromAmount, params.ToAmount, params.FromFee)
 
-	err = a.WithTxBulkUpdateWalletAndTransaction(ctx, []*waas.Wallet{fromWallet, toWallet}, []*waas.Transaction{fromTrsn, toTrsn})
+	err = a.WithTxBulkUpdateWalletAndInsertTransaction(ctx, []*waas.Wallet{fromWallet, toWallet}, []*waas.Transaction{fromTrsn, toTrsn})
 	if err != nil {
 		return nil, err
 	}
@@ -156,8 +156,8 @@ func (a *Account) Reverse(ctx context.Context, transactionID string) (*waas.Reve
 	if err != nil {
 		return nil, err
 	}
-
-	err = a.WithTxBulkUpdateWalletAndTransaction(ctx, []*waas.Wallet{rr.Wallet}, []*waas.Transaction{rr.OldTx, rr.NewTx})
+	// update transaction status
+	err = a.WithTxBulkUpdateWalletAndInsertTransaction(ctx, []*waas.Wallet{rr.Wallet}, []*waas.Transaction{rr.OldTx, rr.NewTx})
 	if err != nil {
 		return nil, err
 	}

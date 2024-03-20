@@ -12,26 +12,35 @@ import (
 var (
 	ErrWalletFrozen                   = NewWaasError("account frozen")
 	ErrWalletInsufficientBalance      = NewWaasError("insufficient balance")
+	ErrWalletInvalid                  = NewWaasError("invalid wallet")
 	ErrWalletInvalidAmount            = NewWaasError("invalid amount: cannot be zero or negative")
 	ErrWalletInvalidTransferSameOwner = NewWaasError("cannot transfer funds to the same owner or wallet")
-	ErrWalletInvalid                  = NewWaasError("invalid wallet")
 	ErrWalletSameCurrencySwap         = NewWaasError("cannot swap between same currency")
-	ErrWalletSwapSameOwnerRequired    = NewWaasError("wamp must be within same user")
+	ErrWalletSwapSameOwnerRequired    = NewWaasError("cannot swap between diffetent customers")
+	ErrWalletClosed                   = NewWaasError("cannot operate on a closed wallet")
+)
+
+type WalletStatus string
+
+const (
+	WalletStatusActive WalletStatus = "active"
+	WalletStatusFrozen WalletStatus = "frozen"
+	WalletStatusClosed WalletStatus = "closed"
 )
 
 // GenerateWalletID generates a wallet ID
 func GenerateWalletID(currencyCode, userID string) string {
-	return strings.ToLower(currencyCode) + "-" + userID
+	return strings.ToLower(strings.TrimSpace(currencyCode)) + "-" + userID
 }
 
 // Wallet represents a user's wallet for holding and managing funds.
 //   - ID is the unique identifier for the wallet.
 //   - CustomerID is the ID of the user who owns the wallet.
 //   - CurrencyCode is the ISO 4217 code of the currency used by the wallet.
-//   - CurrencyName holds the human-readable name of the currency.
 //   - AvailableBalance is the amount of currency readily available for use.
-//   - IsFrozen indicates whether the wallet is frozen and unable to perform transactions.
-//   - IsFiat indicates whether the currency is a fiat currency (e.g., USD, EUR) or not.
+//   - LienBalance is the amount of currency currently locked and unavailable.
+//   - Status indicates whether the wallet is frozen, active or closed.
+//   - IsFiat indicates whether the currency is a fiat currency (e.g., USD, EUR) or not.===================\\\\\\\
 //   - CreatedAt represents the timestamp when the wallet was created.
 //   - UpdatedAt represents the timestamp of the last update to the wallet.
 //   - VersionID is a unique identifier used to ensure that the same operation is not performed multiple times.
@@ -42,8 +51,8 @@ type Wallet struct {
 	CustomerID       string          `json:"customerId" bun:",notnull"`
 	CurrencyCode     string          `json:"currencyCode" bun:",notnull"`
 	AvailableBalance decimal.Decimal `json:"availableBalance" bun:"type:decimal(24,8),notnull"`
-	IsFrozen         bool            `json:"isFrozen" bun:",notnull"`
-	IsFiat           bool            `json:"isFiat" bun:",notnull"`
+	LienBalance      decimal.Decimal `json:"lienBalance" bun:"type:decimal(24,8),notnull"`
+	Status           WalletStatus    `json:"status" bun:",notnull"`
 	CreatedAt        time.Time       `json:"createdAt" bun:",notnull"`
 	UpdatedAt        time.Time       `json:"updatedAt" bun:",notnull"`
 	VersionId        string          `json:"-" bun:",notnull"`
@@ -55,10 +64,9 @@ func NewWallet(customerID, currencyCode string, isFiat bool) *Wallet {
 		mutex:            sync.Mutex{},
 		ID:               GenerateWalletID(currencyCode, customerID),
 		CustomerID:       customerID,
-		CurrencyCode:     strings.ToLower(currencyCode),
+		CurrencyCode:     strings.ToUpper(currencyCode),
 		AvailableBalance: decimal.Zero,
-		IsFrozen:         false,
-		IsFiat:           isFiat,
+		Status:           WalletStatusActive,
 		CreatedAt:        time.Now(),
 		UpdatedAt:        time.Now(),
 		VersionId:        GenerateID(7),
@@ -69,25 +77,50 @@ func NewWallet(customerID, currencyCode string, isFiat bool) *Wallet {
 func (w *Wallet) TotalBalance() decimal.Decimal {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
-	return w.AvailableBalance
+	return w.AvailableBalance.Add(w.LienBalance)
 }
 
-// Freeze freezes the wallet, preventing any further transactions.
-func (w *Wallet) Freeze() {
+// Freeze freezes the wallet.
+func (w *Wallet) Freeze() error {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 
-	w.IsFrozen = true
+	if w.Status == WalletStatusClosed {
+		return ErrWalletClosed
+	}
+
+	w.Status = WalletStatusFrozen
 	w.UpdatedAt = time.Now()
+	return nil
 }
 
 // Unfreeze unfreezes the wallet, allowing transactions to resume.
-func (w *Wallet) Unfreeze() {
+func (w *Wallet) Unfreeze() error {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 
-	w.IsFrozen = false
+	if w.Status == WalletStatusClosed {
+		return ErrWalletClosed
+	}
+
+	w.Status = WalletStatusActive
 	w.UpdatedAt = time.Now()
+	return nil
+}
+
+// IsActive checks if the wallet is active
+func (w *Wallet) IsActive() bool {
+	return w.Status == WalletStatusActive
+}
+
+// IsClosed checks if the wallet is closed.
+func (w *Wallet) IsClosed() bool {
+	return w.Status == WalletStatusClosed
+}
+
+// IsFrozen checks if the wallet is frozen.
+func (w *Wallet) IsFrozen() bool {
+	return w.Status == WalletStatusFrozen
 }
 
 // CreditBalance adds the specified amount to the available balance after subtracting the fee.
@@ -95,9 +128,9 @@ func (w *Wallet) CreditBalance(amount, fee decimal.Decimal) error {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 
-	// if w.IsFrozen {
-	// 	// accept money when we crediting
-	// }
+	if w.IsClosed() {
+		return ErrWalletClosed
+	}
 
 	if amount.LessThanOrEqual(decimal.Zero) || fee.LessThan(decimal.Zero) {
 		return ErrWalletInvalidAmount
@@ -118,8 +151,12 @@ func (w *Wallet) DebitBalance(amount, fee decimal.Decimal) error {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 
-	if w.IsFrozen {
+	if w.IsFrozen() {
 		return ErrWalletFrozen
+	}
+
+	if w.Status == WalletStatusClosed {
+		return ErrWalletClosed
 	}
 
 	if amount.LessThanOrEqual(decimal.Zero) || fee.LessThan(decimal.Zero) {
@@ -136,25 +173,28 @@ func (w *Wallet) DebitBalance(amount, fee decimal.Decimal) error {
 }
 
 // Transfer transfers a specified amount between wallets, taking into account fees.
-func (w *Wallet) TransferTo(toWallet *Wallet, amount, fee decimal.Decimal) error {
-	if w == nil || toWallet == nil {
+func (fromWallet *Wallet) TransferTo(toWallet *Wallet, amount, fee decimal.Decimal) error {
+	if fromWallet == nil || toWallet == nil {
 		return ErrWalletInvalid
 	}
 
-	// ensure we not transferring to same owner/wallet
-	if w.ID == toWallet.ID /*|| (w.CustomerID == toWallet.CustomerID) */ {
+	// ensure we not transferring to same wallet
+	if fromWallet.ID == toWallet.ID {
 		return ErrWalletInvalidTransferSameOwner
 	}
 
-	err := w.DebitBalance(amount, fee)
+	if fromWallet.IsClosed() || toWallet.IsClosed() {
+		return ErrWalletClosed
+	}
+
+	err := fromWallet.DebitBalance(amount, fee)
 	if err != nil {
 		return err
 	}
 
 	err = toWallet.CreditBalance(amount, decimal.Zero)
 	if err != nil {
-		// Rollback transaction if credit fails (direct addition)
-		w.AvailableBalance.Add(amount).Add(fee)
+		fromWallet.AvailableBalance.Add(amount).Add(fee) // Rollback transaction if credit fails (direct addition)
 		return err
 	}
 
@@ -162,23 +202,27 @@ func (w *Wallet) TransferTo(toWallet *Wallet, amount, fee decimal.Decimal) error
 }
 
 // Swap performs a swap between two wallets for different currencies.
-func (w *Wallet) Swap(toWallet *Wallet, fromAmount, toAmount, fee decimal.Decimal) error {
-	if w == nil || toWallet == nil {
+func (fromWallet *Wallet) Swap(toWallet *Wallet, fromAmount, toAmount, fee decimal.Decimal) error {
+	if fromWallet == nil || toWallet == nil {
 		return ErrWalletInvalid
 	}
 
 	// Check if currencies are different
-	if w.CurrencyCode == toWallet.CurrencyCode {
+	if fromWallet.CurrencyCode == toWallet.CurrencyCode {
 		return ErrWalletSameCurrencySwap
 	}
 
 	// Check to ensure swap action is to same user/owner
-	if w.CustomerID != toWallet.CustomerID {
+	if fromWallet.CustomerID != toWallet.CustomerID {
 		return ErrWalletSwapSameOwnerRequired
 	}
 
+	if fromWallet.IsClosed() || toWallet.IsClosed() {
+		return ErrWalletClosed
+	}
+
 	// Check if sufficient balance for swap
-	err := w.DebitBalance(fromAmount, fee)
+	err := fromWallet.DebitBalance(fromAmount, fee)
 	if err != nil {
 		return err
 	}
@@ -187,9 +231,47 @@ func (w *Wallet) Swap(toWallet *Wallet, fromAmount, toAmount, fee decimal.Decima
 	err = toWallet.CreditBalance(toAmount, decimal.Zero)
 	if err != nil {
 		// Add back deducted amount and fee in case of failure
-		w.AvailableBalance.Add(fromAmount).Add(fee)
+		fromWallet.AvailableBalance.Add(fromAmount).Add(fee)
 		return err
 	}
+
+	return nil
+}
+
+// LienAmount locks a specified amount from the available balance.
+func (w *Wallet) LienAmount(amount decimal.Decimal) error {
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
+
+	if amount.LessThanOrEqual(decimal.Zero) {
+		return ErrWalletInvalidAmount
+	}
+
+	if w.AvailableBalance.Sub(amount).LessThan(decimal.Zero) {
+		return ErrWalletInsufficientBalance
+	}
+
+	w.AvailableBalance = w.AvailableBalance.Sub(amount)
+	w.LienBalance = w.LienBalance.Add(amount)
+
+	return nil
+}
+
+// UnLienAmount unlocks a specified amount from the lien balance.
+func (w *Wallet) UnLienAmount(amount decimal.Decimal) error {
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
+
+	if amount.LessThanOrEqual(decimal.Zero) {
+		return ErrWalletInvalidAmount
+	}
+
+	if w.LienBalance.Sub(amount).LessThan(decimal.Zero) {
+		return ErrWalletInsufficientBalance
+	}
+
+	w.LienBalance = w.LienBalance.Sub(amount)
+	w.AvailableBalance = w.AvailableBalance.Add(amount)
 
 	return nil
 }

@@ -1,4 +1,4 @@
-package waas
+package present
 
 import (
 	"time"
@@ -10,14 +10,16 @@ import (
 
 type (
 	NewWalletResponse struct {
-		ID                    string            `json:"id"`
-		CustomerID            string            `json:"customerId"`
-		AvailableBalance      decimal.Decimal   `json:"availableBalance"`
-		AvailableBalanceInUSD decimal.Decimal   `json:"availableBalanceInUSD"`
-		IsFrozen              bool              `json:"isFrozen"`
-		CreatedAt             time.Time         `json:"createdAt"`
-		UpdatedAt             time.Time         `json:"updatedAt"`
-		Currency              currency.Currency `json:"currency"`
+		ID                string            `json:"id"`
+		CustomerID        string            `json:"customerId"`
+		Currency          currency.Currency `json:"currency"`
+		AvailableBalance  decimal.Decimal   `json:"availableBalance"`
+		LienBalance       decimal.Decimal   `json:"lienBalance"`
+		TotalBalance      decimal.Decimal   `json:"totalBalance"`
+		TotalBalanceInUSD decimal.Decimal   `json:"totalBalanceInUSD"`
+		Status            waas.WalletStatus `json:"status"`
+		CreatedAt         time.Time         `json:"createdAt"`
+		UpdatedAt         time.Time         `json:"updatedAt"`
 	}
 
 	TotalBalanceResponse struct {
@@ -33,7 +35,7 @@ type (
 	}
 )
 
-func PresentWallets(wallets []*waas.Wallet, currencies []currency.Currency) (*AllWalletsResponse, error) {
+func WalletList(wallets []*waas.Wallet, currencies []waas.Currency) (*AllWalletsResponse, error) {
 	var (
 		usdTotalBalance decimal.Decimal
 		ws              []NewWalletResponse
@@ -46,7 +48,7 @@ func PresentWallets(wallets []*waas.Wallet, currencies []currency.Currency) (*Al
 		}
 
 		gnwr := generateWalletResponse(_w, *_c)
-		usdTotalBalance = usdTotalBalance.Add(gnwr.AvailableBalanceInUSD)
+		usdTotalBalance = usdTotalBalance.Add(gnwr.TotalBalanceInUSD)
 		ws = append(ws, gnwr)
 	}
 
@@ -58,26 +60,32 @@ func PresentWallets(wallets []*waas.Wallet, currencies []currency.Currency) (*Al
 	return &AllWalletsResponse{Wallets: ws, TotalBalances: tb}, nil
 }
 
-func generateWalletResponse(w *waas.Wallet, c currency.Currency) NewWalletResponse {
+func Wallet(wallet *waas.Wallet, currencies []waas.Currency) (*AllWalletsResponse, error) {
+	return WalletList([]*waas.Wallet{wallet}, currencies)
+}
+
+func generateWalletResponse(w *waas.Wallet, c waas.Currency) NewWalletResponse {
 	var usdEquivalent decimal.Decimal
 
 	if !c.RateBuy.Equal(decimal.Zero) { // since anything divide by 0 is error/panic. let's avoid it
-		usdEquivalent = w.AvailableBalance.Div(c.RateBuy).RoundCeil(int32(c.Precision))
+		usdEquivalent = w.TotalBalance().Div(c.RateBuy).RoundCeil(int32(c.Precision))
 	}
 
 	return NewWalletResponse{
-		ID:                    w.ID,
-		CustomerID:            w.CustomerID,
-		AvailableBalance:      w.AvailableBalance.RoundCeil(int32(c.Precision)),
-		AvailableBalanceInUSD: usdEquivalent,
-		IsFrozen:              w.IsFrozen,
-		CreatedAt:             w.CreatedAt,
-		UpdatedAt:             w.UpdatedAt,
-		Currency:              c,
+		ID:                w.ID,
+		CustomerID:        w.CustomerID,
+		Currency:          c,
+		AvailableBalance:  w.AvailableBalance.RoundCeil(int32(c.Precision)),
+		LienBalance:       w.LienBalance,
+		TotalBalance:      w.TotalBalance(),
+		TotalBalanceInUSD: usdEquivalent,
+		Status:            w.Status,
+		CreatedAt:         w.CreatedAt,
+		UpdatedAt:         w.UpdatedAt,
 	}
 }
 
-func calcTotalBalance(totalAmountUSD decimal.Decimal, currencies []currency.Currency) ([]TotalBalanceResponse, error) {
+func calcTotalBalance(totalAmountUSD decimal.Decimal, currencies []waas.Currency) ([]TotalBalanceResponse, error) {
 	ngn, err := currency.FindCurrency(currencies, "NGN")
 	if err != nil {
 		return nil, err

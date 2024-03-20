@@ -3,6 +3,7 @@ package account
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/otyang/waas-go"
 	"github.com/stretchr/testify/assert"
@@ -41,7 +42,7 @@ func TestAccount_Wallets_and_all_its_assosiated_functions(t *testing.T) {
 	})
 
 	t.Run("Update wallet", func(t *testing.T) {
-		got.IsFiat = true
+		got.CreatedAt = time.Now()
 		v := got.VersionId
 		actual, err := acc.UpdateWallet(context.Background(), got)
 		assert.NoError(t, err)

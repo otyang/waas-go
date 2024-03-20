@@ -22,13 +22,8 @@ func (a *Account) UpdateCurrency(ctx context.Context, currency currency.Currency
 
 func (a *Account) ListCurrencies(ctx context.Context) ([]currency.Currency, error) {
 	var currencies []currency.Currency
-
 	err := a.db.NewSelect().Model(&currencies).Scan(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return currencies, nil
+	return currencies, err
 }
 
 func (a *Account) DeleteCurrency(ctx context.Context, currencyCode string) error {

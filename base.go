@@ -2,29 +2,9 @@ package waas
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	gonanoid "github.com/matoous/go-nanoid"
-)
-
-type (
-	TransactionType   string
-	TransactionStatus string
-)
-
-const (
-	TransactionTypeSwap       TransactionType = "SWAP"
-	TransactionTypeTransfer   TransactionType = "TRANSFER"
-	TransactionTypeDeposit    TransactionType = "DEPOSIT"
-	TransactionTypeWithdrawal TransactionType = "WITHDRAWAL"
-)
-
-const (
-	TransactionStatusNew     TransactionStatus = "NEW"
-	TransactionStatusPending TransactionStatus = "PENDING"
-	TransactionStatusFailed  TransactionStatus = "FAILED"
-	TransactionStatusSuccess TransactionStatus = "SUCCESS"
 )
 
 // IWalletRepository defines repository functions for managing wallets and transactions.
@@ -55,10 +35,17 @@ type IAccountFeature interface {
 	Reverse(ctx context.Context, transactionID string) (*ReverseResponse, error)
 }
 
-// Defines a new error type for common errors encountered in the wallet module.
-type WaasError struct{ error }
+// WalletError provides a common base for wallet-related errors.
+type WaasError struct {
+	msg string
+}
 
-func NewWaasError(msg string) error { return &WaasError{errors.New(msg)} }
+func (e *WaasError) Error() string { return e.msg }
+
+// NewWaasError creates a new WalletError.
+func NewWaasError(msg string) *WaasError {
+	return &WaasError{msg}
+}
 
 // IsWaasError checks if an error is of type WaasError.
 func IsWaasError(err error) bool {
@@ -67,7 +54,7 @@ func IsWaasError(err error) bool {
 }
 
 func NewTransactionID() string {
-	return time.Now().UTC().Format("20060102") + "_" + GenerateID(6)
+	return time.Now().UTC().Format("20060102") + "_" + GenerateID(8)
 }
 
 func GenerateID(size int) string {
