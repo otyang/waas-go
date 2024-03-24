@@ -62,7 +62,7 @@ func TestAccount_Transaction_and_all_its_assosiated_functions(t *testing.T) {
 	t.Run("list without filters", func(t *testing.T) {
 		gotList, nextCursor, err := a.ListTransaction(context.Background(), waas.ListTransactionsFilterParams{})
 		assert.NoError(t, err)
-		assert.NotEmpty(t, nextCursor)
+		assert.Empty(t, nextCursor)
 		assert.NotEmpty(t, gotList)
 	})
 
