@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/otyang/waas-go"
+	"github.com/uptrace/bun"
 )
 
 func (a *Account) CreateWallet(ctx context.Context, wallet *waas.Wallet) (*waas.Wallet, error) {
@@ -43,7 +44,7 @@ func (a *Account) ListWallet(ctx context.Context, params waas.ListWalletsFilterP
 	}
 
 	if len(params.CurrencyCodes) > 0 {
-		q.Where("lower(currency_code) IN (?)", params.CurrencyCodes)
+		q.Where("lower(currency_code) IN (?)", bun.In(waas.ToLowercaseSlice(params.CurrencyCodes)))
 	}
 
 	if params.Status != nil {

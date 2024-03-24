@@ -2,11 +2,10 @@ package account
 
 import (
 	"context"
-	"sort"
-	"strings"
 	"time"
 
 	"github.com/otyang/waas-go"
+	"github.com/uptrace/bun"
 )
 
 func (a *Account) CreateTransaction(ctx context.Context, transaction *waas.Transaction) (*waas.Transaction, error) {
@@ -34,9 +33,8 @@ func (a *Account) UpdateTransactionStatus(ctx context.Context, transactionID str
 	return transaction, err
 }
 
-func (a *Account) ListTransaction(ctx context.Context, params waas.ListTransactionsFilterParams) ([]waas.Transaction, error) {
+func (a *Account) ListTransaction(ctx context.Context, params waas.ListTransactionsFilterParams) ([]waas.Transaction, string, error) {
 	var transactions []waas.Transaction
-	var beforeOnly bool
 
 	if params.Limit < 1 {
 		params.Limit = 1
@@ -44,11 +42,6 @@ func (a *Account) ListTransaction(ctx context.Context, params waas.ListTransacti
 
 	if params.Limit > 500 {
 		params.Limit = 500
-	}
-
-	var sqlOrder string = " desc"
-	if params.SortOrderAscending {
-		sqlOrder = " asc"
 	}
 
 	q := a.db.NewSelect().Model(&transactions).Limit(params.Limit + 1)
@@ -63,7 +56,7 @@ func (a *Account) ListTransaction(ctx context.Context, params waas.ListTransacti
 		}
 
 		if len(params.Currency) > 0 {
-			q.Where("lower(currency) IN (?)", params.Currency)
+			q.Where("lower(currency) IN (?)", bun.In(waas.ToLowercaseSlice(params.Currency)))
 		}
 
 		if params.IsDebit != nil {
@@ -78,63 +71,38 @@ func (a *Account) ListTransaction(ctx context.Context, params waas.ListTransacti
 			q.Where("lower(status) = lower(?)", params.Status)
 		}
 
-		if params.Reversed != nil {
-			q.Where("reversed IS NOT NULL")
+		if params.Reversed != nil && *params.Reversed {
+			q.Where("reversed_at IS NOT NULL")
+		}
+
+		if params.Before.IsZero() && params.After.IsZero() {
+			q.OrderExpr("created_at DESC")
 		}
 
 		if params.Before.IsZero() && !params.After.IsZero() {
-			q.Where("created_at >= ?", params.After).OrderExpr("created_at " + sqlOrder)
+			q.Where("created_at >= ?", params.After).OrderExpr("created_at ASC")
 		}
 
 		if !params.Before.IsZero() && params.After.IsZero() {
-			beforeOnly = true
-			q.Where("created_at <= ?", params.Before).OrderExpr("created_at " + sqlOrder)
+			q.Where("created_at <= ?", params.Before).OrderExpr("created_at DESC")
 		}
 
-		// default case: transactions before 2days
-		if params.Before.IsZero() && params.After.IsZero() {
-			beforeOnly = true
-			q.Where("created_at <= ?", time.Now().UTC().Add(24*2*time.Hour)).OrderExpr("created_at " + sqlOrder)
-		}
-	}
-
-	err := q.Scan(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	if beforeOnly && strings.Contains(sqlOrder, "desc") {
-		sort.Slice(transactions, func(i, j int) bool {
-			return transactions[i].ID < transactions[j].ID
-		})
-	}
-
-	return transactions, nil
-	// return transactions, newCursor(transactions, limit), nil
-}
-
-type Cursor struct {
-	Start   string
-	End     string
-	HasMore bool
-}
-
-func newCursor(records []waas.Transaction, limit int) ([]waas.Transaction, Cursor) {
-	if len(records) == 0 {
-		return records, Cursor{}
-	}
-
-	if len(records) > limit {
-		return records[:limit-1], Cursor{
-			Start:   records[0].CreatedAt.GoString(),
-			End:     records[limit].ID,
-			HasMore: true,
+		if !params.Before.IsZero() && !params.After.IsZero() {
+			q.Where("created_at >= ?", params.After)
+			q.Where("created_at <= ?", params.Before)
+			q.OrderExpr("created_at ASC")
 		}
 	}
 
-	return records[:len(records)-1], Cursor{
-		Start:   records[0].CreatedAt.GoString(),
-		End:     records[len(records)-1].ID,
-		HasMore: false,
+	if err := q.Scan(ctx); err != nil {
+		return nil, "", err
 	}
+
+	var nextCursor string
+	if len(transactions) > params.Limit {
+		nextCursor = transactions[params.Limit].CreatedAt.GoString()
+		transactions = transactions[:params.Limit-1]
+	}
+
+	return transactions, nextCursor, nil
 }

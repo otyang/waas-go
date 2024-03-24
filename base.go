@@ -2,6 +2,7 @@ package waas
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	gonanoid "github.com/matoous/go-nanoid"
@@ -25,7 +26,7 @@ type IAccountFeature interface {
 	CreateTransaction(ctx context.Context, transaction *Transaction) (*Transaction, error)
 	GetTransaction(ctx context.Context, transactionID string) (*Transaction, error)
 	UpdateTransaction(ctx context.Context, transaction *Transaction) (*Transaction, error)
-	ListTransaction(ctx context.Context, params ListTransactionsFilterParams) ([]Transaction, error)
+	ListTransaction(ctx context.Context, params ListTransactionsFilterParams) ([]Transaction, string, error)
 
 	// actions
 	Credit(ctx context.Context, params CreditWalletParams) (*CreditWalletResponse, error)
@@ -58,4 +59,15 @@ func NewTransactionID() string {
 func GenerateID(size int) string {
 	// time.Now().UTC().Format("2006-01-02 15:04:05.999999")
 	return gonanoid.MustGenerate("0123456789abcdefghijklmnopqrstuvwxyz", size)
+}
+
+// helps in making the in sql case insensitive
+func ToLowercaseSlice(strs []string) []string {
+	lowercaseStrs := make([]string, len(strs))
+
+	for i, str := range strs {
+		lowercaseStrs[i] = strings.TrimSpace(strings.ToLower(str)) // Convert each string
+	}
+
+	return lowercaseStrs
 }

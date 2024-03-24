@@ -23,7 +23,7 @@ func setUp() *bun.DB {
 		log.Fatal(err)
 	}
 
-	if err = NewWithMigration(db); err != nil {
+	if _, err = NewWithMigration(db); err != nil {
 		log.Fatal(err)
 	}
 
