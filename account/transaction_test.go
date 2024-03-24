@@ -13,12 +13,10 @@ import (
 func TestAccount_Transaction_and_all_its_assosiated_functions(t *testing.T) {
 	t.Parallel()
 
-	a := &Account{
-		db: TestDB,
-	}
+	a := &Account{db: TestDB}
 
 	txn := waas.Transaction{
-		ID:         "txn_12345678",               // Generate a unique transaction ID
+		ID:         "txn_12345678",               // Generate a unique transaction ID.
 		CustomerID: "cust_9876543",               // Some customer identifier
 		WalletID:   "wallet_54321",               // Some wallet identifier
 		IsDebit:    true,                         // Credit transaction
@@ -60,7 +58,9 @@ func TestAccount_Transaction_and_all_its_assosiated_functions(t *testing.T) {
 	})
 
 	t.Run("list without filters", func(t *testing.T) {
-		gotList, nextCursor, err := a.ListTransaction(context.Background(), waas.ListTransactionsFilterParams{})
+		gotList, nextCursor, err := a.ListTransaction(context.Background(), waas.ListTransactionsFilterParams{
+			Limit: 10,
+		})
 		assert.NoError(t, err)
 		assert.Empty(t, nextCursor)
 		assert.NotEmpty(t, gotList)

@@ -65,7 +65,7 @@ type (
 
 	// SwapParams defines parameters for swapping currencies between wallets.
 	SwapRequestParams struct {
-		UserID           string
+		CustomerID       string
 		FromCurrencyCode string
 		ToCurrencyCode   string
 		FromAmount       decimal.Decimal

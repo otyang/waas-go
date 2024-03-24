@@ -131,7 +131,7 @@ func TestAccount_Swap(t *testing.T) {
 	assert.NoError(t, err)
 
 	got, err := acc.Swap(context.Background(), waas.SwapRequestParams{
-		UserID:           "cust_10",
+		CustomerID:       "cust_10",
 		FromCurrencyCode: "ngn",
 		ToCurrencyCode:   "usd",
 		FromAmount:       decimal.NewFromFloat(1500),

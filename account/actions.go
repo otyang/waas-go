@@ -131,12 +131,12 @@ func (a *Account) Transfer(ctx context.Context, params waas.TransferRequestParam
 }
 
 func (a *Account) Swap(ctx context.Context, params waas.SwapRequestParams) (*waas.SwapWalletResponse, error) {
-	fromWallet, err := a.GetWalletByUserIDAndCurrencyCode(ctx, params.UserID, params.FromCurrencyCode)
+	fromWallet, err := a.GetWalletByUserIDAndCurrencyCode(ctx, params.CustomerID, params.FromCurrencyCode)
 	if err != nil {
 		return nil, err
 	}
 
-	toWallet, err := a.GetWalletByUserIDAndCurrencyCode(ctx, params.UserID, params.ToCurrencyCode)
+	toWallet, err := a.GetWalletByUserIDAndCurrencyCode(ctx, params.CustomerID, params.ToCurrencyCode)
 	if err != nil {
 		return nil, err
 	}
