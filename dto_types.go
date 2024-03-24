@@ -98,11 +98,4 @@ type (
 		Status     *TransactionStatus
 		Reversed   *bool
 	}
-
-	ListOrder string
-)
-
-const (
-	Asc  ListOrder = "asc"
-	Desc ListOrder = "desc"
 )
