@@ -60,22 +60,24 @@ func TestAccount_Transaction_and_all_its_assosiated_functions(t *testing.T) {
 	})
 
 	t.Run("list without filters", func(t *testing.T) {
-		gotList, err := a.ListTransaction(context.Background(), 0, waas.ListTransactionsFilterParams{})
+		gotList, err := a.ListTransaction(context.Background(), waas.ListTransactionsFilterParams{})
 		assert.NoError(t, err)
 		assert.NotEmpty(t, gotList)
 	})
 
 	t.Run("list with filters", func(t *testing.T) {
-		gotList, err := a.ListTransaction(context.Background(), 0, waas.ListTransactionsFilterParams{
-			After:      time.Time{},
-			Before:     time.Time{},
-			CustomerID: nil,
-			WalletID:   nil,
-			Currency:   toPointer("usD"),
-			IsDebit:    toPointer(true),
-			Type:       toPointer(waas.TransactionTypeSwap),
-			Status:     toPointer(waas.TransactionStatusNew),
-			Reversed:   toPointer(false),
+		gotList, err := a.ListTransaction(context.Background(), waas.ListTransactionsFilterParams{
+			Limit:              0,
+			SortOrderAscending: false,
+			Before:             time.Time{},
+			After:              time.Time{},
+			CustomerID:         nil,
+			WalletID:           nil,
+			Currency:           []string{"usD"},
+			IsDebit:            toPointer(true),
+			Type:               toPointer(waas.TransactionTypeSwap),
+			Status:             toPointer(waas.TransactionStatusNew),
+			Reversed:           toPointer(false),
 		})
 		assert.NoError(t, err)
 		assert.NotEmpty(t, gotList)

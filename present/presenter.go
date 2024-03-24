@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/otyang/waas-go"
-	"github.com/otyang/waas-go/currency"
 	"github.com/shopspring/decimal"
 )
 
@@ -12,7 +11,7 @@ type (
 	NewWalletResponse struct {
 		ID                string            `json:"id"`
 		CustomerID        string            `json:"customerId"`
-		Currency          currency.Currency `json:"currency"`
+		Currency          waas.Currency     `json:"currency"`
 		AvailableBalance  decimal.Decimal   `json:"availableBalance"`
 		LienBalance       decimal.Decimal   `json:"lienBalance"`
 		TotalBalance      decimal.Decimal   `json:"totalBalance"`
@@ -42,7 +41,7 @@ func WalletList(wallets []*waas.Wallet, currencies []waas.Currency) (*AllWallets
 	)
 
 	for _, _w := range wallets {
-		_c, err := currency.FindCurrency(currencies, _w.CurrencyCode)
+		_c, err := waas.FindCurrency(currencies, _w.CurrencyCode)
 		if err != nil {
 			return nil, err
 		}
@@ -86,12 +85,12 @@ func generateWalletResponse(w *waas.Wallet, c waas.Currency) NewWalletResponse {
 }
 
 func calcTotalBalance(totalAmountUSD decimal.Decimal, currencies []waas.Currency) ([]TotalBalanceResponse, error) {
-	ngn, err := currency.FindCurrency(currencies, "NGN")
+	ngn, err := waas.FindCurrency(currencies, "NGN")
 	if err != nil {
 		return nil, err
 	}
 
-	usd, err := currency.FindCurrency(currencies, "USD")
+	usd, err := waas.FindCurrency(currencies, "USD")
 	if err != nil {
 		return nil, err
 	}

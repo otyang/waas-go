@@ -81,22 +81,29 @@ type (
 	}
 
 	ListWalletsFilterParams struct {
-		CustomerID   *string
-		CurrencyCode *string
-		IsFiat       *bool
-		IsFrozen     *bool
-		Status       *WalletStatus
+		CustomerID    *string
+		CurrencyCodes []string
+		Status        *WalletStatus
 	}
 
 	ListTransactionsFilterParams struct {
-		After      time.Time
-		Before     time.Time
-		CustomerID *string
-		WalletID   *string
-		Currency   *string
-		IsDebit    *bool
-		Type       *TransactionType
-		Status     *TransactionStatus
-		Reversed   *bool
+		Limit              int
+		SortOrderAscending bool
+		Before             time.Time
+		After              time.Time
+		CustomerID         *string
+		WalletID           *string
+		Currency           []string
+		IsDebit            *bool
+		Type               *TransactionType
+		Status             *TransactionStatus
+		Reversed           *bool
 	}
+
+	ListOrder string
+)
+
+const (
+	Asc  ListOrder = "asc"
+	Desc ListOrder = "desc"
 )

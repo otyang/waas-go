@@ -8,7 +8,6 @@ import (
 
 	dbstore "github.com/otyang/go-dbstore"
 	"github.com/otyang/waas-go"
-	"github.com/otyang/waas-go/currency"
 	"github.com/uptrace/bun"
 )
 
@@ -24,9 +23,7 @@ func setUp() *bun.DB {
 		log.Fatal(err)
 	}
 
-	// err = db.ResetModel(ctx, (*waas.Transaction)(nil), (*waas.Wallet)(nil), (*currency.Currency)(nil))
-	err = NewWithMigration(db)
-	if err != nil {
+	if err = NewWithMigration(db); err != nil {
 		log.Fatal(err)
 	}
 
@@ -34,7 +31,7 @@ func setUp() *bun.DB {
 }
 
 func tearDown(db *bun.DB) {
-	mmodels := []any{(*waas.Transaction)(nil), (*waas.Wallet)(nil), (*currency.Currency)(nil)}
+	mmodels := []any{(*waas.Transaction)(nil), (*waas.Wallet)(nil), (*waas.Currency)(nil)}
 	for _, model := range mmodels {
 		_, err := db.NewDropTable().Model(model).Exec(context.TODO())
 		if err != nil {

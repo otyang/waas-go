@@ -18,9 +18,7 @@ func New(db *bun.DB) *Account {
 }
 
 func (a *Account) NewWithTx(tx bun.Tx) *Account {
-	return &Account{
-		db: tx,
-	}
+	return &Account{db: tx}
 }
 
 func NewWithMigration(db *bun.DB) error {

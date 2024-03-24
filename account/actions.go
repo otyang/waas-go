@@ -7,7 +7,12 @@ import (
 	"github.com/uptrace/bun"
 )
 
-func (a *Account) WithTxBulkUpdateWalletAndInsertTransaction(ctx context.Context, wallets []*waas.Wallet, transactions []*waas.Transaction) error {
+func (a *Account) WithTxBulkUpdateWalletAndInsertTransaction(
+	ctx context.Context,
+	wallets []*waas.Wallet,
+	transactions []*waas.Transaction,
+	otherEntries ...any,
+) error {
 	return a.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
 		for _, wallet := range wallets {
 			if wallet == nil {
@@ -19,13 +24,28 @@ func (a *Account) WithTxBulkUpdateWalletAndInsertTransaction(ctx context.Context
 			}
 		}
 
-		for _, transaction := range transactions {
-			if transaction == nil {
-				continue
+		if len(transactions) > 0 {
+			for _, transaction := range transactions {
+				if transaction == nil {
+					continue
+				}
+				_, err := a.NewWithTx(tx).CreateTransaction(ctx, transaction)
+				if err != nil {
+					return err
+				}
 			}
-			_, err := a.NewWithTx(tx).CreateTransaction(ctx, transaction)
-			if err != nil {
-				return err
+		}
+
+		// for other entries. transaction specific structs
+		if len(otherEntries) > 0 {
+			for _, otherEntry := range otherEntries {
+				if otherEntry == nil {
+					continue
+				}
+				_, err := tx.NewInsert().Model(otherEntry).Exec(ctx)
+				if err != nil {
+					return err
+				}
 			}
 		}
 

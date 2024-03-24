@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/otyang/waas-go"
-	"github.com/otyang/waas-go/currency"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 )
@@ -17,14 +16,14 @@ func Test_calcTotalBalance(t *testing.T) {
 	testCases := []struct {
 		name                  string
 		totalAmountUSD        decimal.Decimal
-		currencies            []currency.Currency
+		currencies            []waas.Currency
 		expectedTotalBalances []TotalBalanceResponse
 		expectedError         error
 	}{
 		{
 			name:           "Valid calculation",
 			totalAmountUSD: decimal.NewFromInt(100),
-			currencies: []currency.Currency{
+			currencies: []waas.Currency{
 				{Code: "NGN", RateSell: decimal.NewFromInt(450), Symbol: "₦", IconURL: "ngn_icon.png", Precision: 2},
 				{Code: "USD", RateSell: decimal.NewFromInt(1), Symbol: "$", IconURL: "usd_icon.png", Precision: 2},
 			},
@@ -37,7 +36,7 @@ func Test_calcTotalBalance(t *testing.T) {
 		{
 			name:           "Error finding NGN",
 			totalAmountUSD: decimal.NewFromInt(50),
-			currencies:     []currency.Currency{
+			currencies:     []waas.Currency{
 				// ... (NGN currency missing)
 			},
 			expectedTotalBalances: nil,
@@ -73,7 +72,7 @@ func Test_generateWalletResponse_NormalConversion(t *testing.T) {
 		CreatedAt:        time.Now(),
 		UpdatedAt:        time.Now(),
 	}
-	curr := currency.Currency{
+	curr := waas.Currency{
 		Code:      "BTC",
 		Precision: 8,
 		RateBuy:   decimal.NewFromInt(20000), // $20,000 per BTC

@@ -1,4 +1,4 @@
-package currency
+package waas
 
 import (
 	"fmt"
@@ -105,7 +105,7 @@ func TestCalculateRate(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			actualRate, err := CalculateRate(currencies, tc.base, tc.from, tc.to)
+			actualRate, err := calculateRate(currencies, tc.base, tc.from, tc.to)
 
 			if tc.shouldErr {
 				assert.Error(t, err)
@@ -135,7 +135,7 @@ func TestNewQuote_ValidInput(t *testing.T) {
 		fee          = decimal.NewFromFloat(5)
 	)
 
-	rate, err := CalculateRate(rateSource, baseCurrency, fromCurrency, toCurrency)
+	rate, err := calculateRate(rateSource, baseCurrency, fromCurrency, toCurrency)
 	assert.NoError(t, err)
 
 	want := &Quote{

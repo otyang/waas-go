@@ -42,19 +42,14 @@ func (a *Account) ListWallet(ctx context.Context, params waas.ListWalletsFilterP
 		q.Where("customer_id = ?", params.CustomerID)
 	}
 
-	if params.CurrencyCode != nil {
-		q.Where("lower(currency_code) = lower(?)", params.CurrencyCode)
+	if len(params.CurrencyCodes) > 0 {
+		q.Where("lower(currency_code) IN (?)", params.CurrencyCodes)
 	}
 
 	if params.Status != nil {
 		q.Where("lower(status) = lower(?)", params.Status)
 	}
 
-	oorder asc , currency
-	if params.IsFiat != nil {
-		q.Where("lower(currency_code) IN (?)", params.IsFiat)
-	}
-
-	err := q.Scan(ctx)
+	err := q.Order("currency_code ASC").Scan(ctx)
 	return wallets, err
 }

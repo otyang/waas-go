@@ -62,10 +62,9 @@ func TestAccount_Wallets_and_all_its_assosiated_functions(t *testing.T) {
 
 	t.Run("list with filters", func(t *testing.T) {
 		gotList, err := acc.ListWallet(context.Background(), waas.ListWalletsFilterParams{
-			CustomerID:   toPointer("customerID"),
-			CurrencyCode: toPointer("currencyCode"),
-			IsFiat:       toPointer(true),
-			IsFrozen:     toPointer(false),
+			CustomerID:    toPointer("customerID"),
+			CurrencyCodes: []string{"NGN"},
+			Status:        toPointer(waas.WalletStatusActive),
 		})
 		assert.NoError(t, err)
 		assert.Empty(t, gotList)

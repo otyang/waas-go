@@ -25,7 +25,7 @@ type IAccountFeature interface {
 	CreateTransaction(ctx context.Context, transaction *Transaction) (*Transaction, error)
 	GetTransaction(ctx context.Context, transactionID string) (*Transaction, error)
 	UpdateTransaction(ctx context.Context, transaction *Transaction) (*Transaction, error)
-	ListTransaction(ctx context.Context, limit int, params ListTransactionsFilterParams) ([]Transaction, error)
+	ListTransaction(ctx context.Context, params ListTransactionsFilterParams) ([]Transaction, error)
 
 	// actions
 	Credit(ctx context.Context, params CreditWalletParams) (*CreditWalletResponse, error)
@@ -36,9 +36,7 @@ type IAccountFeature interface {
 }
 
 // WalletError provides a common base for wallet-related errors.
-type WaasError struct {
-	msg string
-}
+type WaasError struct{ msg string }
 
 func (e *WaasError) Error() string { return e.msg }
 
