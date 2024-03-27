@@ -100,13 +100,13 @@ func calcTotalBalance(totalAmountUSD decimal.Decimal, currencies []waas.Currency
 			CurrencyCode:   ngn.Code,
 			CurrencySymbol: ngn.Symbol,
 			LogoURL:        ngn.IconURL,
-			Total:          totalAmountUSD.Mul(ngn.RateSell).RoundCeil(int32(ngn.Precision)),
+			Total:          totalAmountUSD.Mul(ngn.RateSell).RoundBank(int32(ngn.Precision)),
 		},
 		{
 			CurrencyCode:   usd.Code,
 			CurrencySymbol: usd.Symbol,
 			LogoURL:        usd.IconURL,
-			Total:          totalAmountUSD.Mul(usd.RateSell).RoundCeil(int32(usd.Precision)),
+			Total:          totalAmountUSD.Mul(usd.RateSell).RoundBank(int32(usd.Precision)),
 		},
 	}, nil
 }

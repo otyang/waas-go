@@ -59,7 +59,7 @@ func TestAccount_Transaction_and_all_its_assosiated_functions(t *testing.T) {
 
 	t.Run("list without filters", func(t *testing.T) {
 		gotList, nextCursor, err := a.ListTransaction(context.Background(), waas.ListTransactionsFilterParams{
-			Limit: 10,
+			Limit: 1,
 		})
 		assert.NoError(t, err)
 		assert.Empty(t, nextCursor)
@@ -69,8 +69,8 @@ func TestAccount_Transaction_and_all_its_assosiated_functions(t *testing.T) {
 	t.Run("list with filters", func(t *testing.T) {
 		gotList, nextCursor, err := a.ListTransaction(context.Background(), waas.ListTransactionsFilterParams{
 			Limit:      0,
-			Before:     time.Time{},
-			After:      time.Time{},
+			StartDate:  time.Time{},
+			EndDate:    time.Time{},
 			CustomerID: nil,
 			WalletID:   nil,
 			Currency:   []string{"usD"},

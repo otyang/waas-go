@@ -75,21 +75,21 @@ func (a *Account) ListTransaction(ctx context.Context, params waas.ListTransacti
 			q.Where("reversed_at IS NOT NULL")
 		}
 
-		if params.Before.IsZero() && params.After.IsZero() {
+		if params.EndDate.IsZero() && params.StartDate.IsZero() {
 			q.OrderExpr("created_at DESC")
 		}
 
-		if params.Before.IsZero() && !params.After.IsZero() {
-			q.Where("created_at >= ?", params.After).OrderExpr("created_at ASC")
+		if params.EndDate.IsZero() && !params.StartDate.IsZero() {
+			q.Where("created_at >= ?", params.StartDate).OrderExpr("created_at ASC")
 		}
 
-		if !params.Before.IsZero() && params.After.IsZero() {
-			q.Where("created_at <= ?", params.Before).OrderExpr("created_at DESC")
+		if !params.EndDate.IsZero() && params.StartDate.IsZero() {
+			q.Where("created_at <= ?", params.EndDate).OrderExpr("created_at DESC")
 		}
 
-		if !params.Before.IsZero() && !params.After.IsZero() {
-			q.Where("created_at >= ?", params.After)
-			q.Where("created_at <= ?", params.Before)
+		if !params.EndDate.IsZero() && !params.StartDate.IsZero() {
+			q.Where("created_at >= ?", params.StartDate)
+			q.Where("created_at <= ?", params.EndDate)
 			q.OrderExpr("created_at ASC")
 		}
 	}

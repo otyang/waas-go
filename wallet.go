@@ -194,7 +194,8 @@ func (fromWallet *Wallet) TransferTo(toWallet *Wallet, amount, fee decimal.Decim
 
 	err = toWallet.CreditBalance(amount, decimal.Zero)
 	if err != nil {
-		fromWallet.AvailableBalance.Add(amount).Add(fee) // Rollback transaction if credit fails (direct addition)
+		// Rollback transaction if credit fails (direct addition)
+		fromWallet.AvailableBalance.Add(amount).Add(fee)
 		return err
 	}
 

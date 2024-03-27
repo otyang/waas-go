@@ -88,8 +88,8 @@ type (
 
 	ListTransactionsFilterParams struct {
 		Limit      int
-		Before     time.Time
-		After      time.Time
+		StartDate  time.Time
+		EndDate    time.Time
 		CustomerID *string
 		WalletID   *string
 		Currency   []string
