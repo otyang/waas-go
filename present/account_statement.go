@@ -1,22 +1,27 @@
 package present
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/otyang/waas-go"
 	"github.com/shopspring/decimal"
 )
 
-type (
-	Statement struct {
-		AccountName          string                 `json:"accountName"`
-		AccountNumber        string                 `json:"accountNumber"`
-		AccountHolderAddress string                 `json:"accountHolderAddress"`
-		AccountCurrency      string                 `json:"accountCurrency"`
-		DatePrinted          string                 `json:"datePrinted"`
-		CurrentBalance       string                 `json:"currentBalance"`
-		Summary              AnalyticsSummary       `json:"summary"`
-		Transactions         []StatementTransaction `json:"transactions"`
-	}
+const timeLayout = "02-Jan-2006"
 
+type AccountStatement struct {
+	AccountName          string                 `json:"accountName"`
+	AccountNumber        string                 `json:"accountNumber"`
+	AccountHolderAddress string                 `json:"accountHolderAddress"`
+	AccountCurrency      string                 `json:"accountCurrency"`
+	DatePrinted          string                 `json:"datePrinted"`
+	CurrentBalance       string                 `json:"currentBalance"`
+	Summary              AnalyticsSummary       `json:"summary"`
+	Transactions         []TransactionStatement `json:"transactions"`
+}
+
+type (
 	AnalyticsSummary struct {
 		OpeningBalance        decimal.Decimal `json:"openingBalance"`
 		ClosingBalance        decimal.Decimal `json:"closingBalance"`
@@ -28,7 +33,7 @@ type (
 		TotalFee              decimal.Decimal `json:"totalFee"`
 	}
 
-	StatementTransaction struct {
+	TransactionStatement struct {
 		Date        string `json:"date"`
 		Description string `json:"description"`
 		Credit      string `json:"credit"`
@@ -38,79 +43,78 @@ type (
 	}
 )
 
-const (
-	timeLayout = "02-Jan-2006"
-)
-
-func AccountStatement(currencies []waas.Currency, wallet *waas.Wallet, transactions []*waas.Transaction) Statement {
-	as, st := generateAnalyticsAndTransactions(transactions, 2)
-	return Statement{
-		AccountName:          "",
+func NewAccountStatement(wallet *waas.Wallet, transactions []*waas.Transaction) AccountStatement {
+	accMetrics, listOfTxns := calculateAnalyticsAndTransactions(transactions, int32(wallet.Currency.Precision))
+	return AccountStatement{
+		AccountName:          "", // Placeholder - fetch name if needed
 		AccountNumber:        wallet.ID,
-		AccountHolderAddress: "",
-		AccountCurrency:      wallet.CurrencyCode,
-		DatePrinted:          "",
+		AccountHolderAddress: "", // Placeholder - fetch name if needed
+		AccountCurrency:      wallet.Currency.Name,
+		DatePrinted:          time.Now().Format(timeLayout),
 		CurrentBalance:       wallet.TotalBalance().StringFixed(2),
-		Summary:              as,
-		Transactions:         st,
+		Summary:              accMetrics,
+		Transactions:         listOfTxns,
 	}
 }
 
-func generateAnalyticsAndTransactions(transactions []*waas.Transaction, precision int32) (AnalyticsSummary, []StatementTransaction) {
+func calculateAnalyticsAndTransactions(transactions []*waas.Transaction, precision int32) (AnalyticsSummary, []TransactionStatement) {
 	var (
-		statementTransactions []StatementTransaction
 		analytics             AnalyticsSummary
+		statementTransactions []TransactionStatement
 	)
 
 	analytics.TotalTransactionCount = len(transactions)
 
-	for index, transaction := range transactions {
+	for index, tx := range transactions {
 		if index == 0 {
-			analytics.OpeningBalance = transaction.Amount
+			fmt.Println(tx.BalanceAfter)
+			analytics.OpeningBalance = tx.BalanceAfter
 		}
 
 		if (analytics.TotalTransactionCount > 0) && (index == analytics.TotalTransactionCount-1) {
-			analytics.ClosingBalance = transaction.Amount
+			analytics.ClosingBalance = tx.BalanceAfter
 		}
 
-		if transaction.IsDebit {
-			analytics.TotalDebitCount += 1
-			analytics.TotalDebit = analytics.TotalDebit.Add(transaction.Amount)
+		if tx.IsDebit {
+			analytics.TotalDebitCount++
+			analytics.TotalDebit = analytics.TotalDebit.Add(tx.Amount)
+		} else {
+			analytics.TotalCreditCount++
+			analytics.TotalCredit = analytics.TotalCredit.Add(tx.Amount)
 		}
 
-		if !transaction.IsDebit {
-			analytics.TotalCreditCount += 1
-			analytics.TotalCredit = analytics.TotalCredit.Add(transaction.Amount)
-		}
-
-		analytics.TotalFee = analytics.TotalFee.Add(transaction.Fee)
-		statementTransactions = append(statementTransactions, newStatementTransaction(transaction, precision))
+		analytics.TotalFee = analytics.TotalFee.Add(tx.Fee)
+		statementTransactions = append(statementTransactions, createTransactionStatement(tx, precision))
 	}
 
 	return analytics, statementTransactions
 }
 
-func newStatementTransaction(transaction *waas.Transaction, precision int32) StatementTransaction {
-	narration := func() string {
-		if transaction.Narration == nil {
-			return string(transaction.Type)
-		}
-		return string(transaction.Type) + " " + *transaction.Narration
-	}()
+// createTransactionStatement formats a transaction for the statement.
+func createTransactionStatement(tx *waas.Transaction, precision int32) TransactionStatement {
+	// narration := fmt.Sprintf("%s %s", tx.Type, getNarration(tx)) // More descriptive
 
-	debit, credit := func() (decimal.Decimal, decimal.Decimal) {
-		if transaction.IsDebit {
-			return transaction.Amount, decimal.Zero
-		}
-		return decimal.Zero, transaction.Amount
-	}()
-
-	return StatementTransaction{
-		Date:        transaction.CreatedAt.Format(timeLayout),
-		Description: narration,
-		Debit:       debit.StringFixedBank(precision),
-		Credit:      credit.StringFixedBank(precision),
-		Fee:         transaction.Fee.StringFixedBank(precision),
-		Balance:     transaction.BalanceAfter.StringFixedBank(precision),
+	return TransactionStatement{
+		Date:        tx.CreatedAt.Format(timeLayout),
+		Description: getNarration(tx),
+		Debit:       formatAmount(tx.Amount, tx.IsDebit, precision),
+		Credit:      formatAmount(tx.Amount, !tx.IsDebit, precision),
+		Fee:         tx.Fee.StringFixedBank(precision),
+		Balance:     tx.BalanceAfter.StringFixedBank(precision),
 	}
+}
+
+// formatAmount helps apply debit/credit formatting
+func formatAmount(amount decimal.Decimal, isDebit bool, precision int32) string {
+	if isDebit {
+		return amount.StringFixed(precision)
+	}
+	return decimal.Zero.StringFixed(precision)
+}
+
+func getNarration(tx *waas.Transaction) string {
+	if tx.Narration != nil {
+		return fmt.Sprintf("%s %s", string(tx.Type), *tx.Narration)
+	}
+	return string(tx.Type)
 }

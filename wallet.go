@@ -56,6 +56,7 @@ type Wallet struct {
 	CreatedAt        time.Time       `json:"createdAt" bun:",notnull"`
 	UpdatedAt        time.Time       `json:"updatedAt" bun:",notnull"`
 	VersionId        string          `json:"-" bun:",notnull"`
+	Currency         Currency        `json:"currency" bun:"rel:has-one,join:currency_code=code"`
 }
 
 // NewWallet creates a new Wallet instance.
@@ -73,6 +74,36 @@ func NewWallet(customerID, currencyCode string, isFiat bool) *Wallet {
 	}
 }
 
+func (w *Wallet) IsActive() bool {
+	return w.Status == WalletStatusActive
+}
+
+func (w *Wallet) IsClosed() bool {
+	return w.Status == WalletStatusClosed
+}
+
+func (w *Wallet) IsFrozen() bool {
+	return w.Status == WalletStatusFrozen
+}
+
+func (w *Wallet) CanBeCredited() error {
+	if w.IsClosed() {
+		return ErrWalletClosed
+	}
+	return nil
+}
+
+func (w *Wallet) CanBeDebited() error {
+	if w.IsFrozen() {
+		return ErrWalletFrozen
+	}
+
+	if w.Status == WalletStatusClosed {
+		return ErrWalletClosed
+	}
+	return nil
+}
+
 // TotalBalance Gets the total balance
 func (w *Wallet) TotalBalance() decimal.Decimal {
 	w.mutex.Lock()
@@ -85,7 +116,7 @@ func (w *Wallet) Freeze() error {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 
-	if w.Status == WalletStatusClosed {
+	if w.IsClosed() {
 		return ErrWalletClosed
 	}
 
@@ -99,7 +130,7 @@ func (w *Wallet) Unfreeze() error {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 
-	if w.Status == WalletStatusClosed {
+	if w.IsClosed() {
 		return ErrWalletClosed
 	}
 
@@ -108,28 +139,13 @@ func (w *Wallet) Unfreeze() error {
 	return nil
 }
 
-// IsActive checks if the wallet is active
-func (w *Wallet) IsActive() bool {
-	return w.Status == WalletStatusActive
-}
-
-// IsClosed checks if the wallet is closed.
-func (w *Wallet) IsClosed() bool {
-	return w.Status == WalletStatusClosed
-}
-
-// IsFrozen checks if the wallet is frozen.
-func (w *Wallet) IsFrozen() bool {
-	return w.Status == WalletStatusFrozen
-}
-
 // CreditBalance adds the specified amount to the available balance after subtracting the fee.
 func (w *Wallet) CreditBalance(amount, fee decimal.Decimal) error {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 
-	if w.IsClosed() {
-		return ErrWalletClosed
+	if err := w.CanBeCredited(); err != nil {
+		return err
 	}
 
 	if amount.LessThanOrEqual(decimal.Zero) || fee.LessThan(decimal.Zero) {
@@ -151,12 +167,8 @@ func (w *Wallet) DebitBalance(amount, fee decimal.Decimal) error {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 
-	if w.IsFrozen() {
-		return ErrWalletFrozen
-	}
-
-	if w.Status == WalletStatusClosed {
-		return ErrWalletClosed
+	if err := w.CanBeDebited(); err != nil {
+		return err
 	}
 
 	if amount.LessThanOrEqual(decimal.Zero) || fee.LessThan(decimal.Zero) {
@@ -183,17 +195,19 @@ func (fromWallet *Wallet) TransferTo(toWallet *Wallet, amount, fee decimal.Decim
 		return ErrWalletInvalidTransferSameOwner
 	}
 
-	if fromWallet.IsClosed() || toWallet.IsClosed() {
-		return ErrWalletClosed
-	}
-
-	err := fromWallet.DebitBalance(amount, fee)
-	if err != nil {
+	if err := fromWallet.CanBeDebited(); err != nil {
 		return err
 	}
 
-	err = toWallet.CreditBalance(amount, decimal.Zero)
-	if err != nil {
+	if err := toWallet.CanBeCredited(); err != nil {
+		return err
+	}
+
+	if err := fromWallet.DebitBalance(amount, fee); err != nil {
+		return err
+	}
+
+	if err := toWallet.CreditBalance(amount, decimal.Zero); err != nil {
 		// Rollback transaction if credit fails (direct addition)
 		fromWallet.AvailableBalance.Add(amount).Add(fee)
 		return err
@@ -218,19 +232,19 @@ func (fromWallet *Wallet) Swap(toWallet *Wallet, fromAmount, toAmount, fee decim
 		return ErrWalletSwapSameOwnerRequired
 	}
 
-	if fromWallet.IsClosed() || toWallet.IsClosed() {
-		return ErrWalletClosed
-	}
-
-	// Check if sufficient balance for swap
-	err := fromWallet.DebitBalance(fromAmount, fee)
-	if err != nil {
+	if err := fromWallet.CanBeDebited(); err != nil {
 		return err
 	}
 
-	// Perform swap
-	err = toWallet.CreditBalance(toAmount, decimal.Zero)
-	if err != nil {
+	if err := toWallet.CanBeCredited(); err != nil {
+		return err
+	}
+
+	if err := fromWallet.DebitBalance(fromAmount, fee); err != nil {
+		return err
+	}
+
+	if err := toWallet.CreditBalance(toAmount, decimal.Zero); err != nil {
 		// Add back deducted amount and fee in case of failure
 		fromWallet.AvailableBalance.Add(fromAmount).Add(fee)
 		return err
@@ -244,6 +258,10 @@ func (w *Wallet) LienAmount(amount decimal.Decimal) error {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 
+	if err := w.CanBeDebited(); err != nil {
+		return err
+	}
+
 	if amount.LessThanOrEqual(decimal.Zero) {
 		return ErrWalletInvalidAmount
 	}
@@ -254,7 +272,6 @@ func (w *Wallet) LienAmount(amount decimal.Decimal) error {
 
 	w.AvailableBalance = w.AvailableBalance.Sub(amount)
 	w.LienBalance = w.LienBalance.Add(amount)
-
 	return nil
 }
 
@@ -262,6 +279,10 @@ func (w *Wallet) LienAmount(amount decimal.Decimal) error {
 func (w *Wallet) UnLienAmount(amount decimal.Decimal) error {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
+
+	if err := w.CanBeDebited(); err != nil {
+		return err
+	}
 
 	if amount.LessThanOrEqual(decimal.Zero) {
 		return ErrWalletInvalidAmount
@@ -273,6 +294,5 @@ func (w *Wallet) UnLienAmount(amount decimal.Decimal) error {
 
 	w.LienBalance = w.LienBalance.Sub(amount)
 	w.AvailableBalance = w.AvailableBalance.Add(amount)
-
 	return nil
 }

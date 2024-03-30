@@ -1,93 +1,144 @@
 package present
 
 import (
-	"fmt"
 	"testing"
-	"time"
 
 	"github.com/otyang/waas-go"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_calcTotalBalance(t *testing.T) {
+// Test for success: Verifies correct calculation and response for valid wallets.
+func TestWalletListSuccess(t *testing.T) {
 	t.Parallel()
 
-	testCases := []struct {
-		name                  string
-		totalAmountUSD        decimal.Decimal
-		currencies            []waas.Currency
-		expectedTotalBalances []TotalBalanceResponse
-		expectedError         error
-	}{
+	// Arrange
+	wallets := []*waas.Wallet{
 		{
-			name:           "Valid calculation",
-			totalAmountUSD: decimal.NewFromInt(100),
-			currencies: []waas.Currency{
-				{Code: "NGN", RateSell: decimal.NewFromInt(450), Symbol: "₦", IconURL: "ngn_icon.png", Precision: 2},
-				{Code: "USD", RateSell: decimal.NewFromInt(1), Symbol: "$", IconURL: "usd_icon.png", Precision: 2},
+			ID:               "1",
+			CustomerID:       "customer1",
+			CurrencyCode:     "NGN",
+			AvailableBalance: decimal.NewFromFloat(1000),
+			LienBalance:      decimal.NewFromFloat(0),
+			Status:           waas.WalletStatusActive,
+			Currency: waas.Currency{
+				RateBuy:   decimal.NewFromFloat(415),
+				Precision: 2,
 			},
-			expectedTotalBalances: []TotalBalanceResponse{
-				{CurrencyCode: "NGN", CurrencySymbol: "₦", LogoURL: "ngn_icon.png", Total: decimal.NewFromInt(45000)},
-				{CurrencyCode: "USD", CurrencySymbol: "$", LogoURL: "usd_icon.png", Total: decimal.NewFromInt(100)},
-			},
-			expectedError: nil,
 		},
 		{
-			name:           "Error finding NGN",
-			totalAmountUSD: decimal.NewFromInt(50),
-			currencies:     []waas.Currency{
-				// ... (NGN currency missing)
+			ID:               "2",
+			CustomerID:       "customer2",
+			CurrencyCode:     "USD",
+			AvailableBalance: decimal.NewFromFloat(50),
+			LienBalance:      decimal.NewFromFloat(10),
+			Status:           waas.WalletStatusActive,
+			Currency: waas.Currency{
+				RateBuy:   decimal.NewFromFloat(1),
+				Precision: 2,
 			},
-			expectedTotalBalances: nil,
-			expectedError:         fmt.Errorf("currency not found: NGN"),
 		},
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			actualTotalBalances, err := calcTotalBalance(tc.totalAmountUSD, tc.currencies)
+	responses, totalBalanceUSD, err := WalletList(wallets)
+	assert.NoError(t, err)
 
-			if tc.expectedError == nil {
-				assert.NoError(t, err)
-				assert.Equal(t, actualTotalBalances, tc.expectedTotalBalances)
-			}
-
-			if tc.expectedError != nil {
-				assert.Error(t, err)
-			}
-		})
+	expectedResponses := []NewWalletResponse{
+		{
+			ID:                "1",
+			CustomerID:        "customer1",
+			Currency:          wallets[0].Currency,
+			AvailableBalance:  decimal.NewFromFloat(1000).RoundBank(int32(wallets[0].Currency.Precision)),
+			LienBalance:       decimal.NewFromFloat(0).RoundBank(int32(wallets[0].Currency.Precision)),
+			TotalBalance:      decimal.NewFromFloat(1000).RoundBank(int32(wallets[0].Currency.Precision)),
+			TotalBalanceInUSD: decimal.NewFromFloat(2.41).RoundBank(int32(wallets[0].Currency.Precision)),
+			Status:            waas.WalletStatusActive,
+		},
+		{
+			ID:                "2",
+			CustomerID:        "customer2",
+			Currency:          wallets[1].Currency,
+			AvailableBalance:  decimal.NewFromFloat(50).RoundBank(int32(wallets[1].Currency.Precision)),
+			LienBalance:       decimal.NewFromFloat(10).RoundBank(int32(wallets[1].Currency.Precision)),
+			TotalBalance:      decimal.NewFromFloat(60).RoundBank(int32(wallets[1].Currency.Precision)),
+			TotalBalanceInUSD: decimal.NewFromFloat(60).RoundBank(int32(wallets[1].Currency.Precision)),
+			Status:            waas.WalletStatusActive,
+		},
 	}
+
+	assert.Equal(t, expectedResponses, responses)
+	assert.Equal(t, decimal.NewFromFloat(62.41).String(), totalBalanceUSD.String())
 }
 
-func Test_generateWalletResponse_NormalConversion(t *testing.T) {
+// Test for zero rate: Ensures handling of wallets with zero rate currencies.
+func TestWalletListZeroRate(t *testing.T) {
 	t.Parallel()
 
-	wallet := &waas.Wallet{
-		ID:               "wallet123",
-		CustomerID:       "customer456",
-		AvailableBalance: decimal.NewFromInt(1000),
-		LienBalance:      decimal.NewFromInt(100),
-		Status:           waas.WalletStatusActive,
-		CreatedAt:        time.Now(),
-		UpdatedAt:        time.Now(),
+	// Arrange
+	wallets := []*waas.Wallet{
+		{
+			ID:               "1",
+			CustomerID:       "customer1",
+			CurrencyCode:     "NGN",
+			AvailableBalance: decimal.NewFromFloat(1000),
+			LienBalance:      decimal.NewFromFloat(0),
+			Status:           waas.WalletStatusActive,
+			Currency: waas.Currency{
+				RateBuy:   decimal.Zero,
+				Precision: 2,
+			},
+		},
 	}
-	curr := waas.Currency{
-		Code:      "BTC",
-		Precision: 8,
-		RateBuy:   decimal.NewFromInt(20000), // $20,000 per BTC
-		RateSell:  decimal.NewFromInt(19500), // $19,500 per BTC
+
+	responses, totalBalanceUSD, err := WalletList(wallets)
+
+	// Assert
+	assert.NoError(t, err)
+	assert.Equal(t, totalBalanceUSD.String(), decimal.Zero.String())
+	assert.NotEmpty(t, responses)
+}
+
+func TestTotalBalancesCurrencyNotFound(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	totalAmountUSD := decimal.NewFromFloat(100)
+	currencies := []waas.Currency{{Code: "EUR"}}
+
+	// Act
+	balances, err := TotalBalances(totalAmountUSD, currencies)
+
+	// Assert
+	assert.Error(t, err)
+	assert.Empty(t, balances)
+}
+
+func TestTotalBalancesSuccess(t *testing.T) {
+	// Arrange
+	totalAmountUSD := decimal.NewFromFloat(100)
+	currencies := []waas.Currency{
+		{
+			Code: "NGN", RateSell: decimal.NewFromFloat(415), Precision: 2, IconURL: "https://ngn.icon", Symbol: "₦",
+		},
+		{
+			Code: "USD", RateSell: decimal.NewFromFloat(1), Precision: 2, IconURL: "https://usd.icon", Symbol: "$",
+		},
 	}
 
-	expectedTotalBalanceInUSD := wallet.TotalBalance().Div(curr.RateBuy).RoundCeil(int32(curr.Precision))
+	// Act
+	balances, err := TotalBalances(totalAmountUSD, currencies)
+	assert.NoError(t, err)
 
-	response := generateWalletResponse(wallet, curr)
+	expectedBalances := []TotalBalanceResponse{
+		{
+			CurrencyCode: "NGN", CurrencySymbol: "₦",
+			LogoURL: "https://ngn.icon", Total: decimal.NewFromFloat(41500).StringFixedBank(2),
+		},
+		{
+			CurrencyCode: "USD", CurrencySymbol: "$",
+			LogoURL: "https://usd.icon", Total: decimal.NewFromFloat(100).StringFixedBank(2),
+		},
+	}
 
-	// Assertions
-	assert.Equal(t, response.ID, wallet.ID)
-	assert.Equal(t, response.Status, wallet.Status)
-	assert.Equal(t, response.CustomerID, wallet.CustomerID)
-	assert.Equal(t, response.AvailableBalance.String(), decimal.NewFromInt(1000).String())
-	assert.Equal(t, response.LienBalance.String(), decimal.NewFromInt(100).String())
-	assert.Equal(t, response.TotalBalanceInUSD.String(), expectedTotalBalanceInUSD.String())
+	assert.Equal(t, expectedBalances, balances)
 }

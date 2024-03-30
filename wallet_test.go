@@ -552,8 +552,8 @@ func TestWallet_LienAmount(t *testing.T) {
 			name:            "Frozen Wallet",
 			initialBalance:  decimal.NewFromInt(100),
 			lockAmount:      decimal.NewFromInt(50),
-			expectedBalance: decimal.NewFromInt(50),
-			expectedError:   nil,
+			expectedBalance: decimal.NewFromInt(100),
+			expectedError:   ErrWalletFrozen,
 		},
 	}
 
@@ -561,7 +561,11 @@ func TestWallet_LienAmount(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			wallet := &Wallet{
 				AvailableBalance: tc.initialBalance,
-				Status:           WalletStatusFrozen,
+				// Status:           WalletStatusFrozen,
+			}
+
+			if tc.name == "Frozen Wallet" {
+				wallet.Status = WalletStatusFrozen
 			}
 
 			err := wallet.LienAmount(tc.lockAmount)
