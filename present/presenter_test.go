@@ -3,7 +3,7 @@ package present
 import (
 	"testing"
 
-	"github.com/otyang/waas-go"
+	"github.com/otyang/waas-go/types"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 )
@@ -13,15 +13,15 @@ func TestWalletListSuccess(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	wallets := []*waas.Wallet{
+	wallets := []*types.Wallet{
 		{
 			ID:               "1",
 			CustomerID:       "customer1",
 			CurrencyCode:     "NGN",
 			AvailableBalance: decimal.NewFromFloat(1000),
 			LienBalance:      decimal.NewFromFloat(0),
-			Status:           waas.WalletStatusActive,
-			Currency: waas.Currency{
+			Status:           types.WalletStatusActive,
+			Currency: types.Currency{
 				RateBuy:   decimal.NewFromFloat(415),
 				Precision: 2,
 			},
@@ -32,8 +32,8 @@ func TestWalletListSuccess(t *testing.T) {
 			CurrencyCode:     "USD",
 			AvailableBalance: decimal.NewFromFloat(50),
 			LienBalance:      decimal.NewFromFloat(10),
-			Status:           waas.WalletStatusActive,
-			Currency: waas.Currency{
+			Status:           types.WalletStatusActive,
+			Currency: types.Currency{
 				RateBuy:   decimal.NewFromFloat(1),
 				Precision: 2,
 			},
@@ -52,7 +52,7 @@ func TestWalletListSuccess(t *testing.T) {
 			LienBalance:       decimal.NewFromFloat(0).RoundBank(int32(wallets[0].Currency.Precision)),
 			TotalBalance:      decimal.NewFromFloat(1000).RoundBank(int32(wallets[0].Currency.Precision)),
 			TotalBalanceInUSD: decimal.NewFromFloat(2.41).RoundBank(int32(wallets[0].Currency.Precision)),
-			Status:            waas.WalletStatusActive,
+			Status:            types.WalletStatusActive,
 		},
 		{
 			ID:                "2",
@@ -62,7 +62,7 @@ func TestWalletListSuccess(t *testing.T) {
 			LienBalance:       decimal.NewFromFloat(10).RoundBank(int32(wallets[1].Currency.Precision)),
 			TotalBalance:      decimal.NewFromFloat(60).RoundBank(int32(wallets[1].Currency.Precision)),
 			TotalBalanceInUSD: decimal.NewFromFloat(60).RoundBank(int32(wallets[1].Currency.Precision)),
-			Status:            waas.WalletStatusActive,
+			Status:            types.WalletStatusActive,
 		},
 	}
 
@@ -75,15 +75,15 @@ func TestWalletListZeroRate(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	wallets := []*waas.Wallet{
+	wallets := []*types.Wallet{
 		{
 			ID:               "1",
 			CustomerID:       "customer1",
 			CurrencyCode:     "NGN",
 			AvailableBalance: decimal.NewFromFloat(1000),
 			LienBalance:      decimal.NewFromFloat(0),
-			Status:           waas.WalletStatusActive,
-			Currency: waas.Currency{
+			Status:           types.WalletStatusActive,
+			Currency: types.Currency{
 				RateBuy:   decimal.Zero,
 				Precision: 2,
 			},
@@ -103,7 +103,7 @@ func TestTotalBalancesCurrencyNotFound(t *testing.T) {
 
 	// Arrange
 	totalAmountUSD := decimal.NewFromFloat(100)
-	currencies := []waas.Currency{{Code: "EUR"}}
+	currencies := []types.Currency{{Code: "EUR"}}
 
 	// Act
 	balances, err := TotalBalances(totalAmountUSD, currencies)
@@ -116,7 +116,7 @@ func TestTotalBalancesCurrencyNotFound(t *testing.T) {
 func TestTotalBalancesSuccess(t *testing.T) {
 	// Arrange
 	totalAmountUSD := decimal.NewFromFloat(100)
-	currencies := []waas.Currency{
+	currencies := []types.Currency{
 		{
 			Code: "NGN", RateSell: decimal.NewFromFloat(415), Precision: 2, IconURL: "https://ngn.icon", Symbol: "₦",
 		},

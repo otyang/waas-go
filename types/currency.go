@@ -1,4 +1,4 @@
-package waas
+package types
 
 import (
 	"errors"
@@ -139,17 +139,15 @@ func calculateRate(currencies []Currency, baseCurrency, from, to string) (decima
 
 // Quote structure
 type Quote struct {
-	BaseCurrency     string          `json:"baseCurrency"`
-	FromCurrencyInfo Currency        `json:"fromCurrencyInfo"`
-	FromCurrency     string          `json:"fromCurrency"`
-	FromAmount       decimal.Decimal `json:"fromAmount"`
-	ToCurrency       string          `json:"toCurrency"`
-	ToCurrencyInfo   Currency        `json:"toCurrencyInfo"`
-	ToAmount         decimal.Decimal `json:"toAmount"`
-	Fee              decimal.Decimal `json:"fee"`
-	Rate             decimal.Decimal `json:"rate"`
-	GrossAmount      decimal.Decimal `json:"grossAmount"`
-	Date             time.Time       `json:"date"`
+	BaseCurrency string          `json:"baseCurrency"`
+	FromCurrency string          `json:"fromCurrency"`
+	FromAmount   decimal.Decimal `json:"fromAmount"`
+	ToCurrency   string          `json:"toCurrency"`
+	ToAmount     decimal.Decimal `json:"toAmount"`
+	Fee          decimal.Decimal `json:"fee"`
+	Rate         decimal.Decimal `json:"rate"`
+	GrossAmount  decimal.Decimal `json:"grossAmount"`
+	Date         time.Time       `json:"date"`
 }
 
 // NewQuote creates a new quote object.
@@ -174,16 +172,14 @@ func NewQuote(rateSource []Currency, baseCurrency, fromCurrency, toCurrency stri
 	}
 
 	return &Quote{
-		BaseCurrency:     baseCurrency,
-		FromCurrencyInfo: *infoFrom,
-		FromCurrency:     fromCurrency,
-		FromAmount:       fromAmount,
-		ToCurrencyInfo:   *infoTo,
-		ToCurrency:       toCurrency,
-		ToAmount:         fromAmount.Mul(rate).RoundCeil(int32(infoTo.Precision)),
-		Fee:              fee,
-		Rate:             rate,
-		GrossAmount:      fromAmount.Add(fee).RoundCeil(int32(infoFrom.Precision)),
-		Date:             time.Now(),
+		BaseCurrency: baseCurrency,
+		FromCurrency: fromCurrency,
+		FromAmount:   fromAmount,
+		ToCurrency:   toCurrency,
+		ToAmount:     fromAmount.Mul(rate).RoundCeil(int32(infoTo.Precision)),
+		Fee:          fee,
+		Rate:         rate,
+		GrossAmount:  fromAmount.Add(fee).RoundCeil(int32(infoFrom.Precision)),
+		Date:         time.Now(),
 	}, nil
 }

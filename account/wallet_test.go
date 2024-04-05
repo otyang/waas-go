@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/otyang/waas-go"
+	"github.com/otyang/waas-go/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -55,16 +55,16 @@ func TestAccount_Wallets_and_all_its_assosiated_functions(t *testing.T) {
 	assert.NoError(t, err)
 
 	t.Run("list without filters", func(t *testing.T) {
-		gotList, err := acc.ListWallet(context.Background(), waas.ListWalletsFilterParams{})
+		gotList, err := acc.ListWallet(context.Background(), types.ListWalletsFilterParams{})
 		assert.NoError(t, err)
 		assert.NotEmpty(t, gotList)
 	})
 
 	t.Run("list with filters", func(t *testing.T) {
-		gotList, err := acc.ListWallet(context.Background(), waas.ListWalletsFilterParams{
+		gotList, err := acc.ListWallet(context.Background(), types.ListWalletsFilterParams{
 			CustomerID:    toPointer("customerID"),
 			CurrencyCodes: []string{"NGN"},
-			Status:        toPointer(waas.WalletStatusActive),
+			Status:        toPointer(types.WalletStatusActive),
 		})
 		assert.NoError(t, err)
 		assert.Empty(t, gotList)

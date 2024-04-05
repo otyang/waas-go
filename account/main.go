@@ -3,11 +3,11 @@ package account
 import (
 	"context"
 
-	"github.com/otyang/waas-go"
+	"github.com/otyang/waas-go/types"
 	"github.com/uptrace/bun"
 )
 
-var _ waas.IAccountFeature = (*Account)(nil)
+var _ types.IAccountFeature = (*Account)(nil)
 
 type Account struct {
 	db bun.IDB
@@ -24,12 +24,12 @@ func (a *Account) NewWithTx(tx bun.Tx) *Account {
 func NewWithMigration(db *bun.DB) (*Account, error) {
 	ctx := context.Background()
 
-	_, err := db.NewCreateTable().Model((*waas.Transaction)(nil)).IfNotExists().Exec(ctx)
+	_, err := db.NewCreateTable().Model((*types.Transaction)(nil)).IfNotExists().Exec(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = db.NewCreateTable().Model((*waas.Wallet)(nil)).IfNotExists().Exec(ctx)
+	_, err = db.NewCreateTable().Model((*types.Wallet)(nil)).IfNotExists().Exec(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -40,6 +40,6 @@ func NewWithMigration(db *bun.DB) (*Account, error) {
 	// 	Column("category_id").
 	// 	Exec(ctx)
 
-	_, err = db.NewCreateTable().Model((*waas.Currency)(nil)).IfNotExists().Exec(ctx)
+	_, err = db.NewCreateTable().Model((*types.Currency)(nil)).IfNotExists().Exec(ctx)
 	return New(db), err
 }

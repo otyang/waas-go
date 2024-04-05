@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/otyang/waas-go"
+	"github.com/otyang/waas-go/types"
 	"github.com/shopspring/decimal"
 )
 
@@ -43,7 +43,7 @@ type (
 	}
 )
 
-func NewAccountStatement(wallet *waas.Wallet, transactions []*waas.Transaction) AccountStatement {
+func NewAccountStatement(wallet *types.Wallet, transactions []*types.Transaction) AccountStatement {
 	accMetrics, listOfTxns := calculateAnalyticsAndTransactions(transactions, int32(wallet.Currency.Precision))
 	return AccountStatement{
 		AccountName:          "", // Placeholder - fetch name if needed
@@ -57,7 +57,7 @@ func NewAccountStatement(wallet *waas.Wallet, transactions []*waas.Transaction) 
 	}
 }
 
-func calculateAnalyticsAndTransactions(transactions []*waas.Transaction, precision int32) (AnalyticsSummary, []TransactionStatement) {
+func calculateAnalyticsAndTransactions(transactions []*types.Transaction, precision int32) (AnalyticsSummary, []TransactionStatement) {
 	var (
 		analytics             AnalyticsSummary
 		statementTransactions []TransactionStatement
@@ -91,7 +91,7 @@ func calculateAnalyticsAndTransactions(transactions []*waas.Transaction, precisi
 }
 
 // createTransactionStatement formats a transaction for the statement.
-func createTransactionStatement(tx *waas.Transaction, precision int32) TransactionStatement {
+func createTransactionStatement(tx *types.Transaction, precision int32) TransactionStatement {
 	// narration := fmt.Sprintf("%s %s", tx.Type, getNarration(tx)) // More descriptive
 
 	return TransactionStatement{
@@ -112,7 +112,7 @@ func formatAmount(amount decimal.Decimal, isDebit bool, precision int32) string 
 	return decimal.Zero.StringFixed(precision)
 }
 
-func getNarration(tx *waas.Transaction) string {
+func getNarration(tx *types.Transaction) string {
 	if tx.Narration != nil {
 		return fmt.Sprintf("%s %s", string(tx.Type), *tx.Narration)
 	}

@@ -4,14 +4,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/otyang/waas-go"
+	"github.com/otyang/waas-go/types"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 )
 
 // Define a function to create mock transactions (customize as needed)
-func createMockTransaction(isDebit bool, amount, fee, balanceAfter float64) *waas.Transaction {
-	return &waas.Transaction{
+func createMockTransaction(isDebit bool, amount, fee, balanceAfter float64) *types.Transaction {
+	return &types.Transaction{
 		IsDebit:      isDebit,
 		Amount:       decimal.NewFromFloat(amount),
 		Fee:          decimal.NewFromFloat(fee),
@@ -61,7 +61,7 @@ func TestCalculateAnalyticsAndTransactions(t *testing.T) {
 		},
 	}
 
-	transactions := []*waas.Transaction{
+	transactions := []*types.Transaction{
 		createMockTransaction(true, 2, 0.25, 2.00),
 		createMockTransaction(false, 8.0, 0.25, 0.00),
 		createMockTransaction(true, 10.0, 0.25, 40.00),
@@ -79,13 +79,13 @@ func Test_createTransactionStatement(t *testing.T) {
 
 	testCases := []struct {
 		name      string
-		inputTx   *waas.Transaction
+		inputTx   *types.Transaction
 		precision int32
 		expected  TransactionStatement
 	}{
 		{
 			name: "Debit transaction",
-			inputTx: &waas.Transaction{
+			inputTx: &types.Transaction{
 				Type:         "DEBIT",
 				Narration:    toPointer("Test Transaction"),
 				IsDebit:      true,

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/otyang/waas-go"
+	"github.com/otyang/waas-go/types"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 )
@@ -17,7 +17,7 @@ func TestAccount_CreateCurrency(t *testing.T) {
 		db: TestDB,
 	}
 
-	gotNGN, err := acc.CreateCurrency(context.Background(), waas.Currency{
+	gotNGN, err := acc.CreateCurrency(context.Background(), types.Currency{
 		Code:          "NGN",
 		Name:          "",
 		Symbol:        "",

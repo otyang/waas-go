@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	dbstore "github.com/otyang/go-dbstore"
-	"github.com/otyang/waas-go"
+	"github.com/otyang/waas-go/types"
 	"github.com/uptrace/bun"
 )
 
@@ -31,7 +31,7 @@ func setUp() *bun.DB {
 }
 
 func tearDown(db *bun.DB) {
-	mmodels := []any{(*waas.Transaction)(nil), (*waas.Wallet)(nil), (*waas.Currency)(nil)}
+	mmodels := []any{(*types.Transaction)(nil), (*types.Wallet)(nil), (*types.Currency)(nil)}
 	for _, model := range mmodels {
 		_, err := db.NewDropTable().Model(model).Exec(context.TODO())
 		if err != nil {
@@ -40,8 +40,8 @@ func tearDown(db *bun.DB) {
 	}
 }
 
-func createTestRandomWallet(customerID, currencyCode string) *waas.Wallet {
-	return waas.NewWallet(customerID, currencyCode, false)
+func createTestRandomWallet(customerID, currencyCode string) *types.Wallet {
+	return types.NewWallet(customerID, currencyCode, false)
 }
 
 func toPointer[T any](v T) *T {

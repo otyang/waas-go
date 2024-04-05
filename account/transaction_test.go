@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/otyang/waas-go"
+	"github.com/otyang/waas-go/types"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 )
@@ -15,7 +15,7 @@ func TestAccount_Transaction_and_all_its_assosiated_functions(t *testing.T) {
 
 	a := &Account{db: TestDB}
 
-	txn := waas.Transaction{
+	txn := types.Transaction{
 		ID:         "txn_12345678",               // Generate a unique transaction ID.
 		CustomerID: "cust_9876543",               // Some customer identifier
 		WalletID:   "wallet_54321",               // Some wallet identifier
@@ -25,8 +25,8 @@ func TestAccount_Transaction_and_all_its_assosiated_functions(t *testing.T) {
 		Fee:        decimal.NewFromFloat(2.50),   // Transaction fee
 		//	TotalAmount:    decimal.NewFromFloat(102.50),
 		BalanceAfter:   decimal.NewFromFloat(250.25), // Assuming a previous balance
-		Type:           waas.TransactionTypeSwap,
-		Status:         waas.TransactionStatusNew,
+		Type:           types.TransactionTypeSwap,
+		Status:         types.TransactionStatusNew,
 		Narration:      toPointer("Payment for Order ABC"),
 		CounterpartyID: toPointer("tx_123456"),
 		CreatedAt:      time.Time{},
@@ -44,10 +44,10 @@ func TestAccount_Transaction_and_all_its_assosiated_functions(t *testing.T) {
 
 	t.Run("update transaction", func(t *testing.T) {
 		txn.WalletID = "wont_update_this_12345"
-		got, err := a.UpdateTransactionStatus(context.Background(), txn.ID, waas.TransactionStatusFailed)
+		got, err := a.UpdateTransactionStatus(context.Background(), txn.ID, types.TransactionStatusFailed)
 		assert.NoError(t, err)
 		assert.NotEqual(t, "wont_update_this_12345", got.WalletID)
-		assert.Equal(t, waas.TransactionStatusFailed, got.Status)
+		assert.Equal(t, types.TransactionStatusFailed, got.Status)
 	})
 
 	t.Run("update transaction status", func(t *testing.T) {
@@ -58,7 +58,7 @@ func TestAccount_Transaction_and_all_its_assosiated_functions(t *testing.T) {
 	})
 
 	t.Run("list without filters", func(t *testing.T) {
-		gotList, nextCursor, err := a.ListTransaction(context.Background(), waas.ListTransactionsFilterParams{
+		gotList, nextCursor, err := a.ListTransaction(context.Background(), types.ListTransactionsFilterParams{
 			Limit: 1,
 		})
 		assert.NoError(t, err)
@@ -67,7 +67,7 @@ func TestAccount_Transaction_and_all_its_assosiated_functions(t *testing.T) {
 	})
 
 	t.Run("list with filters", func(t *testing.T) {
-		gotList, nextCursor, err := a.ListTransaction(context.Background(), waas.ListTransactionsFilterParams{
+		gotList, nextCursor, err := a.ListTransaction(context.Background(), types.ListTransactionsFilterParams{
 			Limit:      0,
 			StartDate:  time.Time{},
 			EndDate:    time.Time{},
@@ -75,8 +75,8 @@ func TestAccount_Transaction_and_all_its_assosiated_functions(t *testing.T) {
 			WalletID:   nil,
 			Currency:   []string{"usD"},
 			IsDebit:    toPointer(true),
-			Type:       toPointer(waas.TransactionTypeSwap),
-			Status:     toPointer(waas.TransactionStatusNew),
+			Type:       toPointer(types.TransactionTypeSwap),
+			Status:     toPointer(types.TransactionStatusNew),
 			Reversed:   toPointer(false),
 		})
 		assert.NoError(t, err)

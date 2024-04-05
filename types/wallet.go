@@ -1,4 +1,4 @@
-package waas
+package types
 
 import (
 	"strings"
@@ -97,7 +97,6 @@ func (w *Wallet) CanBeDebited() error {
 	if w.IsFrozen() {
 		return ErrWalletFrozen
 	}
-
 	if w.Status == WalletStatusClosed {
 		return ErrWalletClosed
 	}

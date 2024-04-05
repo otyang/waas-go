@@ -1,4 +1,4 @@
-package waas
+package types
 
 import (
 	"time"

@@ -3,21 +3,21 @@ package present
 import (
 	"time"
 
-	"github.com/otyang/waas-go"
+	"github.com/otyang/waas-go/types"
 	"github.com/shopspring/decimal"
 )
 
 type NewWalletResponse struct {
-	ID                string            `json:"id"`
-	CustomerID        string            `json:"customerId"`
-	Currency          waas.Currency     `json:"currency"`
-	AvailableBalance  decimal.Decimal   `json:"availableBalance"`
-	LienBalance       decimal.Decimal   `json:"lienBalance"`
-	TotalBalance      decimal.Decimal   `json:"totalBalance"`
-	TotalBalanceInUSD decimal.Decimal   `json:"totalBalanceInUSD"`
-	Status            waas.WalletStatus `json:"status"`
-	CreatedAt         time.Time         `json:"createdAt"`
-	UpdatedAt         time.Time         `json:"updatedAt"`
+	ID                string             `json:"id"`
+	CustomerID        string             `json:"customerId"`
+	Currency          types.Currency     `json:"currency"`
+	AvailableBalance  decimal.Decimal    `json:"availableBalance"`
+	LienBalance       decimal.Decimal    `json:"lienBalance"`
+	TotalBalance      decimal.Decimal    `json:"totalBalance"`
+	TotalBalanceInUSD decimal.Decimal    `json:"totalBalanceInUSD"`
+	Status            types.WalletStatus `json:"status"`
+	CreatedAt         time.Time          `json:"createdAt"`
+	UpdatedAt         time.Time          `json:"updatedAt"`
 }
 
 type TotalBalanceResponse struct {
@@ -27,7 +27,7 @@ type TotalBalanceResponse struct {
 	Total          string
 }
 
-func WalletList(wallets []*waas.Wallet) ([]NewWalletResponse, decimal.Decimal, error) {
+func WalletList(wallets []*types.Wallet) ([]NewWalletResponse, decimal.Decimal, error) {
 	var (
 		allWalletsBalanceInUSD decimal.Decimal
 		walletResponses        []NewWalletResponse
@@ -59,21 +59,21 @@ func WalletList(wallets []*waas.Wallet) ([]NewWalletResponse, decimal.Decimal, e
 	return walletResponses, allWalletsBalanceInUSD, nil
 }
 
-func Wallet(wallet *waas.Wallet, currencies []waas.Currency) (*NewWalletResponse, error) {
-	response, _, err := WalletList([]*waas.Wallet{wallet})
+func Wallet(wallet *types.Wallet, currencies []types.Currency) (*NewWalletResponse, error) {
+	response, _, err := WalletList([]*types.Wallet{wallet})
 	if err != nil {
 		return nil, err
 	}
 	return &response[0], nil
 }
 
-func TotalBalances(totalAmountUSD decimal.Decimal, currencies []waas.Currency) ([]TotalBalanceResponse, error) {
-	ngn, err := waas.FindCurrency(currencies, "NGN")
+func TotalBalances(totalAmountUSD decimal.Decimal, currencies []types.Currency) ([]TotalBalanceResponse, error) {
+	ngn, err := types.FindCurrency(currencies, "NGN")
 	if err != nil {
 		return nil, err
 	}
 
-	usd, err := waas.FindCurrency(currencies, "USD")
+	usd, err := types.FindCurrency(currencies, "USD")
 	if err != nil {
 		return nil, err
 	}

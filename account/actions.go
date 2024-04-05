@@ -3,14 +3,14 @@ package account
 import (
 	"context"
 
-	"github.com/otyang/waas-go"
+	"github.com/otyang/waas-go/types"
 	"github.com/uptrace/bun"
 )
 
 func (a *Account) WithTxBulkUpdateWalletAndInsertTransaction(
 	ctx context.Context,
-	wallets []*waas.Wallet,
-	transactions []*waas.Transaction,
+	wallets []*types.Wallet,
+	transactions []*types.Transaction,
 	otherEntries ...any,
 ) error {
 	return a.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
@@ -53,7 +53,7 @@ func (a *Account) WithTxBulkUpdateWalletAndInsertTransaction(
 	})
 }
 
-func (a *Account) Credit(ctx context.Context, params waas.CreditWalletParams) (*waas.CreditWalletResponse, error) {
+func (a *Account) Credit(ctx context.Context, params types.CreditWalletParams) (*types.CreditWalletResponse, error) {
 	wallet, err := a.GetWalletByID(ctx, params.WalletID)
 	if err != nil {
 		return nil, err
@@ -64,18 +64,18 @@ func (a *Account) Credit(ctx context.Context, params waas.CreditWalletParams) (*
 		return nil, err
 	}
 
-	transaction := waas.NewTransactionForCreditEntry(wallet, params.Amount, params.Fee, params.Type)
+	transaction := types.NewTransactionForCreditEntry(wallet, params.Amount, params.Fee, params.Type)
 	transaction.SetNarration(params.Narration)
 
-	err = a.WithTxBulkUpdateWalletAndInsertTransaction(ctx, []*waas.Wallet{wallet}, []*waas.Transaction{transaction})
+	err = a.WithTxBulkUpdateWalletAndInsertTransaction(ctx, []*types.Wallet{wallet}, []*types.Transaction{transaction})
 	if err != nil {
 		return nil, err
 	}
 
-	return &waas.CreditWalletResponse{Wallet: wallet, Transaction: transaction}, nil
+	return &types.CreditWalletResponse{Wallet: wallet, Transaction: transaction}, nil
 }
 
-func (a *Account) Debit(ctx context.Context, params waas.DebitWalletParams) (*waas.DebitWalletResponse, error) {
+func (a *Account) Debit(ctx context.Context, params types.DebitWalletParams) (*types.DebitWalletResponse, error) {
 	wallet, err := a.GetWalletByID(ctx, params.WalletID)
 	if err != nil {
 		return nil, err
@@ -86,18 +86,18 @@ func (a *Account) Debit(ctx context.Context, params waas.DebitWalletParams) (*wa
 		return nil, err
 	}
 
-	transaction := waas.NewTransactionForDebitEntry(wallet, params.Amount, params.Fee, params.Type, params.Status)
+	transaction := types.NewTransactionForDebitEntry(wallet, params.Amount, params.Fee, params.Type, params.Status)
 	transaction.SetNarration(params.Narration)
 
-	err = a.WithTxBulkUpdateWalletAndInsertTransaction(ctx, []*waas.Wallet{wallet}, []*waas.Transaction{transaction})
+	err = a.WithTxBulkUpdateWalletAndInsertTransaction(ctx, []*types.Wallet{wallet}, []*types.Transaction{transaction})
 	if err != nil {
 		return nil, err
 	}
 
-	return &waas.DebitWalletResponse{Wallet: wallet, Transaction: transaction}, nil
+	return &types.DebitWalletResponse{Wallet: wallet, Transaction: transaction}, nil
 }
 
-func (a *Account) Transfer(ctx context.Context, params waas.TransferRequestParams) (*waas.TransferResponse, error) {
+func (a *Account) Transfer(ctx context.Context, params types.TransferRequestParams) (*types.TransferResponse, error) {
 	fromWallet, err := a.GetWalletByID(ctx, params.FromWalletID)
 	if err != nil {
 		return nil, err
@@ -113,16 +113,16 @@ func (a *Account) Transfer(ctx context.Context, params waas.TransferRequestParam
 		return nil, err
 	}
 
-	fromTrsn, toTrsn := waas.NewTransactionForTransfer(fromWallet, toWallet, params.Amount, params.Fee)
+	fromTrsn, toTrsn := types.NewTransactionForTransfer(fromWallet, toWallet, params.Amount, params.Fee)
 	fromTrsn.SetNarration(params.Narration)
 	toTrsn.SetNarration(params.Narration)
 
-	err = a.WithTxBulkUpdateWalletAndInsertTransaction(ctx, []*waas.Wallet{fromWallet, toWallet}, []*waas.Transaction{fromTrsn, toTrsn})
+	err = a.WithTxBulkUpdateWalletAndInsertTransaction(ctx, []*types.Wallet{fromWallet, toWallet}, []*types.Transaction{fromTrsn, toTrsn})
 	if err != nil {
 		return nil, err
 	}
 
-	return &waas.TransferResponse{
+	return &types.TransferResponse{
 		FromWallet:      fromWallet,
 		ToWallet:        toWallet,
 		FromTransaction: fromTrsn,
@@ -130,7 +130,7 @@ func (a *Account) Transfer(ctx context.Context, params waas.TransferRequestParam
 	}, nil
 }
 
-func (a *Account) Swap(ctx context.Context, params waas.SwapRequestParams) (*waas.SwapWalletResponse, error) {
+func (a *Account) Swap(ctx context.Context, params types.SwapRequestParams) (*types.SwapWalletResponse, error) {
 	fromWallet, err := a.GetWalletByUserIDAndCurrencyCode(ctx, params.CustomerID, params.FromCurrencyCode)
 	if err != nil {
 		return nil, err
@@ -146,14 +146,14 @@ func (a *Account) Swap(ctx context.Context, params waas.SwapRequestParams) (*waa
 		return nil, err
 	}
 
-	fromTrsn, toTrsn := waas.NewTransactionForSwap(fromWallet, toWallet, params.FromAmount, params.ToAmount, params.FromFee)
+	fromTrsn, toTrsn := types.NewTransactionForSwap(fromWallet, toWallet, params.FromAmount, params.ToAmount, params.FromFee)
 
-	err = a.WithTxBulkUpdateWalletAndInsertTransaction(ctx, []*waas.Wallet{fromWallet, toWallet}, []*waas.Transaction{fromTrsn, toTrsn})
+	err = a.WithTxBulkUpdateWalletAndInsertTransaction(ctx, []*types.Wallet{fromWallet, toWallet}, []*types.Transaction{fromTrsn, toTrsn})
 	if err != nil {
 		return nil, err
 	}
 
-	return &waas.SwapWalletResponse{
+	return &types.SwapWalletResponse{
 		FromWallet:      fromWallet,
 		ToWallet:        toWallet,
 		FromTransaction: fromTrsn,
@@ -161,7 +161,7 @@ func (a *Account) Swap(ctx context.Context, params waas.SwapRequestParams) (*waa
 	}, err
 }
 
-func (a *Account) Reverse(ctx context.Context, transactionID string) (*waas.ReverseResponse, error) {
+func (a *Account) Reverse(ctx context.Context, transactionID string) (*types.ReverseResponse, error) {
 	t, err := a.GetTransaction(ctx, transactionID)
 	if err != nil {
 		return nil, err
@@ -177,7 +177,7 @@ func (a *Account) Reverse(ctx context.Context, transactionID string) (*waas.Reve
 		return nil, err
 	}
 	// update transaction status
-	err = a.WithTxBulkUpdateWalletAndInsertTransaction(ctx, []*waas.Wallet{rr.Wallet}, []*waas.Transaction{rr.OldTx, rr.NewTx})
+	err = a.WithTxBulkUpdateWalletAndInsertTransaction(ctx, []*types.Wallet{rr.Wallet}, []*types.Transaction{rr.OldTx, rr.NewTx})
 	if err != nil {
 		return nil, err
 	}
