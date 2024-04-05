@@ -60,7 +60,7 @@ type Wallet struct {
 }
 
 // NewWallet creates a new Wallet instance.
-func NewWallet(customerID, currencyCode string, isFiat bool) *Wallet {
+func NewWallet(customerID, currencyCode string) *Wallet {
 	return &Wallet{
 		mutex:            sync.Mutex{},
 		ID:               GenerateWalletID(currencyCode, customerID),

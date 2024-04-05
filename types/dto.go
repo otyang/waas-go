@@ -7,8 +7,8 @@ import (
 )
 
 type (
-	// CreditWalletParams defines parameters for crediting a wallet.
-	CreditWalletParams struct {
+	// CreditWalletOpts defines parameters for crediting a wallet.
+	CreditWalletOpts struct {
 		WalletID  string
 		Amount    decimal.Decimal
 		Fee       decimal.Decimal
@@ -21,8 +21,8 @@ type (
 		Transaction *Transaction
 	}
 
-	// DebitWalletParams defines parameters for debiting a wallet.
-	DebitWalletParams struct {
+	// DebitWalletOpts defines parameters for debiting a wallet.
+	DebitWalletOpts struct {
 		WalletID  string
 		Amount    decimal.Decimal
 		Fee       decimal.Decimal
@@ -36,8 +36,8 @@ type (
 		Transaction *Transaction
 	}
 
-	// TransferParams defines parameters for transferring funds between wallets.
-	TransferRequestParams struct {
+	// TransferOpts defines parameters for transferring funds between wallets.
+	TransferRequestOpts struct {
 		FromWalletID string          `json:"fromWid"`
 		ToWalletID   string          `json:"toWid"`
 		Amount       decimal.Decimal `json:"amount"`
@@ -52,8 +52,8 @@ type (
 		ToTransaction   *Transaction
 	}
 
-	// ReverseParams defines parameters for reversing a transaction.
-	ReverseRequestParams struct {
+	// ReverseOpts defines parameters for reversing a transaction.
+	ReverseRequestOpts struct {
 		TransactionID string `json:"transactionId"`
 	}
 
@@ -63,8 +63,8 @@ type (
 		Wallet *Wallet
 	}
 
-	// SwapParams defines parameters for swapping currencies between wallets.
-	SwapRequestParams struct {
+	// SwapOpts defines parameters for swapping currencies between wallets.
+	SwapRequestOpts struct {
 		CustomerID       string
 		FromCurrencyCode string
 		ToCurrencyCode   string
@@ -80,13 +80,13 @@ type (
 		ToTransaction   *Transaction
 	}
 
-	ListWalletsFilterParams struct {
-		CustomerID    *string
+	ListWalletsFilterOpts struct {
+		CustomerID    string
 		CurrencyCodes []string
-		Status        *WalletStatus
+		Status        WalletStatus
 	}
 
-	ListTransactionsFilterParams struct {
+	ListTransactionsFilterOpts struct {
 		Limit      int
 		StartDate  time.Time
 		EndDate    time.Time

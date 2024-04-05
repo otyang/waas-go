@@ -8,24 +8,25 @@ import (
 	"github.com/uptrace/bun"
 )
 
-func (a *Account) CreateWallet(ctx context.Context, wallet *types.Wallet) (*types.Wallet, error) {
+// create wallet, find wallet doesnt exist. then create or
+func (a *Client) CreateWallet(ctx context.Context, wallet *types.Wallet) (*types.Wallet, error) {
 	wallet.CreatedAt = time.Now()
 	wallet.UpdatedAt = time.Now()
 	_, err := a.db.NewInsert().Model(wallet).Ignore().Exec(ctx)
 	return wallet, err
 }
 
-func (a *Account) GetWalletByID(ctx context.Context, walletID string) (*types.Wallet, error) {
+func (a *Client) GetWalletByID(ctx context.Context, walletID string) (*types.Wallet, error) {
 	wallet := types.Wallet{ID: walletID}
 	err := a.db.NewSelect().Model(&wallet).WherePK().Limit(1).Scan(ctx)
 	return &wallet, err
 }
 
-func (acc *Account) GetWalletByUserIDAndCurrencyCode(ctx context.Context, userID, currencyCode string) (*types.Wallet, error) {
+func (acc *Client) GetWalletByUserIDAndCurrencyCode(ctx context.Context, userID, currencyCode string) (*types.Wallet, error) {
 	return acc.GetWalletByID(ctx, types.GenerateWalletID(currencyCode, userID))
 }
 
-func (a *Account) UpdateWallet(ctx context.Context, wallet *types.Wallet) (*types.Wallet, error) {
+func (a *Client) UpdateWallet(ctx context.Context, wallet *types.Wallet) (*types.Wallet, error) {
 	oldVersionID := wallet.VersionId       // extract oldVersionID. for concurrency locks
 	wallet.VersionId = types.GenerateID(7) // newVId
 	wallet.UpdatedAt = time.Now()
@@ -34,21 +35,21 @@ func (a *Account) UpdateWallet(ctx context.Context, wallet *types.Wallet) (*type
 	return wallet, err
 }
 
-func (a *Account) ListWallet(ctx context.Context, params types.ListWalletsFilterParams) ([]types.Wallet, error) {
+func (a *Client) ListWallet(ctx context.Context, opts types.ListWalletsFilterOpts) ([]types.Wallet, error) {
 	var wallets []types.Wallet
 
 	q := a.db.NewSelect().Model(&wallets)
 
-	if params.CustomerID != nil {
-		q.Where("customer_id = ?", params.CustomerID)
+	if opts.CustomerID != "" {
+		q.Where("customer_id = ?", opts.CustomerID)
 	}
 
-	if len(params.CurrencyCodes) > 0 {
-		q.Where("lower(currency_code) IN (?)", bun.In(types.ToLowercaseSlice(params.CurrencyCodes)))
+	if len(opts.CurrencyCodes) > 0 {
+		q.Where("lower(currency_code) IN (?)", bun.In(types.ToLowercaseSlice(opts.CurrencyCodes)))
 	}
 
-	if params.Status != nil {
-		q.Where("lower(status) = lower(?)", params.Status)
+	if string(opts.Status) != "" {
+		q.Where("lower(status) = lower(?)", opts.Status)
 	}
 
 	err := q.Order("currency_code ASC").Scan(ctx)

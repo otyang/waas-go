@@ -10,10 +10,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccount_Transaction_and_all_its_assosiated_functions(t *testing.T) {
+func TestClient_Transaction_and_all_its_assosiated_functions(t *testing.T) {
 	t.Parallel()
 
-	a := &Account{db: TestDB}
+	a := &Client{db: TestDB}
 
 	txn := types.Transaction{
 		ID:         "txn_12345678",               // Generate a unique transaction ID.
@@ -58,7 +58,7 @@ func TestAccount_Transaction_and_all_its_assosiated_functions(t *testing.T) {
 	})
 
 	t.Run("list without filters", func(t *testing.T) {
-		gotList, nextCursor, err := a.ListTransaction(context.Background(), types.ListTransactionsFilterParams{
+		gotList, nextCursor, err := a.ListTransaction(context.Background(), types.ListTransactionsFilterOpts{
 			Limit: 1,
 		})
 		assert.NoError(t, err)
@@ -67,7 +67,7 @@ func TestAccount_Transaction_and_all_its_assosiated_functions(t *testing.T) {
 	})
 
 	t.Run("list with filters", func(t *testing.T) {
-		gotList, nextCursor, err := a.ListTransaction(context.Background(), types.ListTransactionsFilterParams{
+		gotList, nextCursor, err := a.ListTransaction(context.Background(), types.ListTransactionsFilterOpts{
 			Limit:      0,
 			StartDate:  time.Time{},
 			EndDate:    time.Time{},

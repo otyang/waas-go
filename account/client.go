@@ -7,21 +7,21 @@ import (
 	"github.com/uptrace/bun"
 )
 
-var _ types.IAccountFeature = (*Account)(nil)
+var _ types.IAccountFeature = (*Client)(nil)
 
-type Account struct {
+type Client struct {
 	db bun.IDB
 }
 
-func New(db *bun.DB) *Account {
-	return &Account{db: db}
+func New(db *bun.DB) *Client {
+	return &Client{db: db}
 }
 
-func (a *Account) NewWithTx(tx bun.Tx) *Account {
-	return &Account{db: tx}
+func (a *Client) NewWithTx(tx bun.Tx) *Client {
+	return &Client{db: tx}
 }
 
-func NewWithMigration(db *bun.DB) (*Account, error) {
+func NewWithMigration(db *bun.DB) (*Client, error) {
 	ctx := context.Background()
 
 	_, err := db.NewCreateTable().Model((*types.Transaction)(nil)).IfNotExists().Exec(ctx)

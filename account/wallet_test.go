@@ -9,10 +9,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccount_Wallets_and_all_its_assosiated_functions(t *testing.T) {
+func TestClient_Wallets_and_all_its_assosiated_functions(t *testing.T) {
 	t.Parallel()
 
-	acc := &Account{
+	acc := &Client{
 		db: TestDB,
 	}
 
@@ -55,16 +55,16 @@ func TestAccount_Wallets_and_all_its_assosiated_functions(t *testing.T) {
 	assert.NoError(t, err)
 
 	t.Run("list without filters", func(t *testing.T) {
-		gotList, err := acc.ListWallet(context.Background(), types.ListWalletsFilterParams{})
+		gotList, err := acc.ListWallet(context.Background(), types.ListWalletsFilterOpts{})
 		assert.NoError(t, err)
 		assert.NotEmpty(t, gotList)
 	})
 
 	t.Run("list with filters", func(t *testing.T) {
-		gotList, err := acc.ListWallet(context.Background(), types.ListWalletsFilterParams{
-			CustomerID:    toPointer("customerID"),
+		gotList, err := acc.ListWallet(context.Background(), types.ListWalletsFilterOpts{
+			CustomerID:    "customerID",
 			CurrencyCodes: []string{"NGN"},
-			Status:        toPointer(types.WalletStatusActive),
+			Status:        types.WalletStatusActive,
 		})
 		assert.NoError(t, err)
 		assert.Empty(t, gotList)

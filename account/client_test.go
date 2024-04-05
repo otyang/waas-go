@@ -41,7 +41,7 @@ func tearDown(db *bun.DB) {
 }
 
 func createTestRandomWallet(customerID, currencyCode string) *types.Wallet {
-	return types.NewWallet(customerID, currencyCode, false)
+	return types.NewWallet(customerID, currencyCode)
 }
 
 func toPointer[T any](v T) *T {

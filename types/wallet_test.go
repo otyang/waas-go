@@ -38,10 +38,9 @@ func TestNewWallet(t *testing.T) {
 	// Arrange
 	customerID := "user1"
 	currencyCode := "USD"
-	isFiat := true
 
 	// Act
-	wallet := NewWallet(customerID, currencyCode, isFiat)
+	wallet := NewWallet(customerID, currencyCode)
 
 	// Assert
 	assert.Equal(t, GenerateWalletID(currencyCode, customerID), wallet.ID)
@@ -345,7 +344,7 @@ func TestWallet_Transfesr(t *testing.T) {
 	}{
 		{
 			name:                "Transfer with nil ToWallet",
-			fromWallet:          NewWallet("owner1", "USD", true),
+			fromWallet:          NewWallet("owner1", "USD"),
 			toWallet:            nil,
 			transferAmount:      decimal.NewFromInt(50),
 			expectedError:       ErrWalletInvalid,
@@ -353,24 +352,24 @@ func TestWallet_Transfesr(t *testing.T) {
 		},
 		{
 			name:                "Insufficient transfer total balance",
-			fromWallet:          NewWallet("user1", "USD", true),
-			toWallet:            NewWallet("user2", "USD", true),
+			fromWallet:          NewWallet("user1", "USD"),
+			toWallet:            NewWallet("user2", "USD"),
 			transferAmount:      decimal.NewFromInt(500),
 			expectedError:       ErrWalletInsufficientBalance,
 			expectedFromBalance: decimal.NewFromInt(100),
 		},
 		{
 			name:                "Insufficient transfer to same user",
-			fromWallet:          NewWallet("user1", "USD", true),
-			toWallet:            NewWallet("user1", "EUR", true),
+			fromWallet:          NewWallet("user1", "USD"),
+			toWallet:            NewWallet("user1", "EUR"),
 			transferAmount:      decimal.NewFromInt(500),
 			expectedError:       ErrWalletInsufficientBalance,
 			expectedFromBalance: decimal.NewFromInt(100),
 		},
 		{
 			name:                "Successful transfer to different user",
-			fromWallet:          NewWallet("user1", "USD", true),
-			toWallet:            NewWallet("user2", "USD", true),
+			fromWallet:          NewWallet("user1", "USD"),
+			toWallet:            NewWallet("user2", "USD"),
 			transferAmount:      decimal.NewFromInt(50),
 			fee:                 decimal.NewFromInt(1),
 			expectedError:       nil,
@@ -397,8 +396,8 @@ func TestWallet_TransferTo_Concurrent(t *testing.T) {
 	t.Parallel()
 
 	// Create two wallets for the test.
-	wallet1 := NewWallet("user1", "USD", true)
-	wallet2 := NewWallet("user2", "USD", true)
+	wallet1 := NewWallet("user1", "USD")
+	wallet2 := NewWallet("user2", "USD")
 
 	// Initialize wallets with some balance.
 	wallet1.AvailableBalance = decimal.NewFromInt(100)
@@ -433,10 +432,10 @@ func TestWallet_TransferTo_Concurrent(t *testing.T) {
 
 func TestSwap(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
-		wallet1 := NewWallet("user1", "USD", true)
+		wallet1 := NewWallet("user1", "USD")
 		wallet1.AvailableBalance = decimal.NewFromFloat(100)
 
-		wallet2 := NewWallet("user1", "EUR", true)
+		wallet2 := NewWallet("user1", "EUR")
 		wallet2.AvailableBalance = decimal.NewFromFloat(50)
 
 		fromAmount := decimal.NewFromFloat(50)
@@ -455,34 +454,34 @@ func TestSwap(t *testing.T) {
 	})
 
 	t.Run("SameCurrencySwap", func(t *testing.T) {
-		wallet1 := NewWallet("user1", "USD", true)
-		wallet2 := NewWallet("user1", "USD", true)
+		wallet1 := NewWallet("user1", "USD")
+		wallet2 := NewWallet("user1", "USD")
 
 		err := wallet1.Swap(wallet2, decimal.Zero, decimal.Zero, decimal.Zero)
 		assert.Equal(t, ErrWalletSameCurrencySwap, err)
 	})
 
 	t.Run("SwapMustBeSameOwner", func(t *testing.T) {
-		wallet1 := NewWallet("user1", "USD", true)
-		wallet2 := NewWallet("user2", "EUR", true)
+		wallet1 := NewWallet("user1", "USD")
+		wallet2 := NewWallet("user2", "EUR")
 
 		err := wallet1.Swap(wallet2, decimal.Zero, decimal.Zero, decimal.Zero)
 		assert.Equal(t, ErrWalletSwapSameOwnerRequired, err)
 	})
 
 	t.Run("InsufficientBalance", func(t *testing.T) {
-		wallet1 := NewWallet("user1", "USD", true)
-		wallet2 := NewWallet("user1", "EUR", true)
+		wallet1 := NewWallet("user1", "USD")
+		wallet2 := NewWallet("user1", "EUR")
 
 		err := wallet1.Swap(wallet2, decimal.NewFromFloat(100), decimal.Zero, decimal.Zero)
 		assert.Equal(t, ErrWalletInsufficientBalance, err)
 	})
 
 	t.Run("Swap TO A closed or frozen account", func(t *testing.T) {
-		wallet1 := NewWallet("user1", "USD", true)
+		wallet1 := NewWallet("user1", "USD")
 		wallet1.AvailableBalance = decimal.NewFromFloat(100)
 
-		wallet2 := NewWallet("user1", "EUR", true)
+		wallet2 := NewWallet("user1", "EUR")
 		wallet2.Status = WalletStatusClosed
 
 		err := wallet1.Swap(wallet2, decimal.NewFromFloat(100), decimal.Zero, decimal.Zero)
@@ -495,11 +494,11 @@ func TestSwap(t *testing.T) {
 	})
 
 	t.Run("Swap FROM A closed or frozen account", func(t *testing.T) {
-		wallet1 := NewWallet("user1", "USD", true)
+		wallet1 := NewWallet("user1", "USD")
 		wallet1.AvailableBalance = decimal.NewFromFloat(100)
 		wallet1.Status = WalletStatusClosed
 
-		wallet2 := NewWallet("user1", "EUR", true)
+		wallet2 := NewWallet("user1", "EUR")
 
 		err := wallet1.Swap(wallet2, decimal.NewFromFloat(100), decimal.Zero, decimal.Zero)
 		assert.Equal(t, ErrWalletClosed.Error(), err.Error())

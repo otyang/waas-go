@@ -20,19 +20,19 @@ type IAccountFeature interface {
 	GetWalletByID(ctx context.Context, walletID string) (*Wallet, error)
 	GetWalletByUserIDAndCurrencyCode(ctx context.Context, userID, currencyCode string) (*Wallet, error)
 	UpdateWallet(ctx context.Context, wallet *Wallet) (*Wallet, error)
-	ListWallet(ctx context.Context, params ListWalletsFilterParams) ([]Wallet, error)
+	ListWallet(ctx context.Context, opts ListWalletsFilterOpts) ([]Wallet, error)
 
 	// Transaction Management
 	CreateTransaction(ctx context.Context, transaction *Transaction) (*Transaction, error)
 	GetTransaction(ctx context.Context, transactionID string) (*Transaction, error)
 	UpdateTransaction(ctx context.Context, transaction *Transaction) (*Transaction, error)
-	ListTransaction(ctx context.Context, params ListTransactionsFilterParams) ([]Transaction, string, error)
+	ListTransaction(ctx context.Context, opts ListTransactionsFilterOpts) ([]Transaction, string, error)
 
 	// actions
-	Credit(ctx context.Context, params CreditWalletParams) (*CreditWalletResponse, error)
-	Debit(ctx context.Context, params DebitWalletParams) (*DebitWalletResponse, error)
-	Swap(ctx context.Context, params SwapRequestParams) (*SwapWalletResponse, error)
-	Transfer(ctx context.Context, params TransferRequestParams) (*TransferResponse, error)
+	Credit(ctx context.Context, opts CreditWalletOpts) (*CreditWalletResponse, error)
+	Debit(ctx context.Context, opts DebitWalletOpts) (*DebitWalletResponse, error)
+	Swap(ctx context.Context, opts SwapRequestOpts) (*SwapWalletResponse, error)
+	Transfer(ctx context.Context, opts TransferRequestOpts) (*TransferResponse, error)
 	Reverse(ctx context.Context, transactionID string) (*ReverseResponse, error)
 }
 

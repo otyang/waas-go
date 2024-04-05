@@ -10,17 +10,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccount_WithTxBulkUpdateWalletAndInsertTransaction(t *testing.T) {
+func TestClient_WithTxBulkUpdateWalletAndInsertTransaction(t *testing.T) {
 	t.Parallel()
 
-	acc := &Account{
+	acc := &Client{
 		db: TestDB,
 	}
 
 	wallet, err := acc.CreateWallet(context.Background(), createTestRandomWallet("cust_800", "ngn"))
 	assert.NoError(t, err)
 
-	got, err := acc.Credit(context.Background(), types.CreditWalletParams{
+	got, err := acc.Credit(context.Background(), types.CreditWalletOpts{
 		WalletID:  wallet.ID,
 		Amount:    decimal.NewFromFloat(50),
 		Fee:       decimal.Zero,
@@ -36,10 +36,10 @@ func TestAccount_WithTxBulkUpdateWalletAndInsertTransaction(t *testing.T) {
 	assert.True(t, strings.Contains(err.Error(), "constraint"))
 }
 
-func TestAccount_Credit_and_Debit(t *testing.T) {
+func TestClient_Credit_and_Debit(t *testing.T) {
 	t.Parallel()
 
-	acc := &Account{
+	acc := &Client{
 		db: TestDB,
 	}
 
@@ -49,7 +49,7 @@ func TestAccount_Credit_and_Debit(t *testing.T) {
 	assert.NoError(t, err)
 
 	t.Run("crediting", func(t *testing.T) {
-		got, err := acc.Credit(context.Background(), types.CreditWalletParams{
+		got, err := acc.Credit(context.Background(), types.CreditWalletOpts{
 			WalletID:  w.ID,
 			Amount:    decimal.NewFromFloat(50),
 			Fee:       decimal.Zero,
@@ -64,7 +64,7 @@ func TestAccount_Credit_and_Debit(t *testing.T) {
 	})
 
 	t.Run("debiting", func(t *testing.T) {
-		got, err := acc.Debit(context.Background(), types.DebitWalletParams{
+		got, err := acc.Debit(context.Background(), types.DebitWalletOpts{
 			WalletID:  w.ID,
 			Amount:    decimal.NewFromFloat(20),
 			Fee:       decimal.Zero,
@@ -79,10 +79,10 @@ func TestAccount_Credit_and_Debit(t *testing.T) {
 	})
 }
 
-func TestAccount_Transfer(t *testing.T) {
+func TestClient_Transfer(t *testing.T) {
 	t.Parallel()
 
-	acc := &Account{
+	acc := &Client{
 		db: TestDB,
 	}
 
@@ -96,7 +96,7 @@ func TestAccount_Transfer(t *testing.T) {
 	_, err = acc.CreateWallet(context.Background(), destinationWallet)
 	assert.NoError(t, err)
 
-	got, err := acc.Transfer(context.Background(), types.TransferRequestParams{
+	got, err := acc.Transfer(context.Background(), types.TransferRequestOpts{
 		FromWalletID: sourceWallet.ID,
 		ToWalletID:   destinationWallet.ID,
 		Amount:       decimal.NewFromFloat(30),
@@ -113,10 +113,10 @@ func TestAccount_Transfer(t *testing.T) {
 	assert.Equal(t, "transfer of funds", *got.ToTransaction.Narration)
 }
 
-func TestAccount_Swap(t *testing.T) {
+func TestClient_Swap(t *testing.T) {
 	t.Parallel()
 
-	acc := &Account{
+	acc := &Client{
 		db: TestDB,
 	}
 
@@ -130,7 +130,7 @@ func TestAccount_Swap(t *testing.T) {
 	_, err = acc.CreateWallet(context.Background(), toWallet)
 	assert.NoError(t, err)
 
-	got, err := acc.Swap(context.Background(), types.SwapRequestParams{
+	got, err := acc.Swap(context.Background(), types.SwapRequestOpts{
 		CustomerID:       "cust_10",
 		FromCurrencyCode: "ngn",
 		ToCurrencyCode:   "usd",
