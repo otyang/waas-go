@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestClient_Wallets_and_all_its_assosiated_functions(t *testing.T) {
+func TestAccount_Wallets_and_all_its_assosiated_functions(t *testing.T) {
 	t.Parallel()
 
 	acc := &Client{

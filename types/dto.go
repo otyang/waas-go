@@ -90,8 +90,8 @@ type (
 		Limit      int
 		StartDate  time.Time
 		EndDate    time.Time
-		CustomerID *string
-		WalletID   *string
+		CustomerID string
+		WalletID   string
 		Currency   []string
 		IsDebit    *bool
 		Type       *TransactionType

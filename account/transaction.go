@@ -34,7 +34,7 @@ func (a *Client) UpdateTransactionStatus(ctx context.Context, transactionID stri
 }
 
 func (a *Client) ListTransaction(ctx context.Context, opts types.ListTransactionsFilterOpts) ([]types.Transaction, string, error) {
-	var transactions []types.Transaction
+	var results []types.Transaction
 
 	if opts.Limit < 1 {
 		opts.Limit = 1
@@ -44,14 +44,14 @@ func (a *Client) ListTransaction(ctx context.Context, opts types.ListTransaction
 		opts.Limit = 500
 	}
 
-	q := a.db.NewSelect().Model(&transactions).Limit(opts.Limit + 1)
+	q := a.db.NewSelect().Model(&results).Limit(opts.Limit + 1)
 
 	{ // filters
-		if opts.CustomerID != nil {
+		if opts.CustomerID != "" {
 			q.Where("customer_id = ?", opts.CustomerID)
 		}
 
-		if opts.WalletID != nil {
+		if opts.WalletID != "" {
 			q.Where("wallet_id = ?", opts.WalletID)
 		}
 
@@ -99,10 +99,10 @@ func (a *Client) ListTransaction(ctx context.Context, opts types.ListTransaction
 	}
 
 	var nextCursor string
-	if len(transactions) > opts.Limit {
-		nextCursor = transactions[opts.Limit].CreatedAt.GoString()
-		transactions = transactions[:opts.Limit-1]
+	if len(results) > opts.Limit {
+		nextCursor = results[opts.Limit].CreatedAt.Format(time.RFC3339)
+		results = results[:opts.Limit-1]
 	}
 
-	return transactions, nextCursor, nil
+	return results, nextCursor, nil
 }

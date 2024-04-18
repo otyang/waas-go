@@ -59,10 +59,12 @@ func TestClient_Transaction_and_all_its_assosiated_functions(t *testing.T) {
 
 	t.Run("list without filters", func(t *testing.T) {
 		gotList, nextCursor, err := a.ListTransaction(context.Background(), types.ListTransactionsFilterOpts{
-			Limit: 1,
+			Limit: 400,
 		})
 		assert.NoError(t, err)
-		assert.Empty(t, nextCursor)
+		assert.NotEmpty(t, nextCursor)
+
+		//	t.Errorf("%+v", gotList)
 		assert.NotEmpty(t, gotList)
 	})
 
@@ -71,8 +73,8 @@ func TestClient_Transaction_and_all_its_assosiated_functions(t *testing.T) {
 			Limit:      0,
 			StartDate:  time.Time{},
 			EndDate:    time.Time{},
-			CustomerID: nil,
-			WalletID:   nil,
+			CustomerID: "",
+			WalletID:   "",
 			Currency:   []string{"usD"},
 			IsDebit:    toPointer(true),
 			Type:       toPointer(types.TransactionTypeSwap),

@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestClient_CreateCurrency(t *testing.T) {
+func TestAccount_CreateCurrency(t *testing.T) {
 	t.Parallel()
 
 	acc := &Client{
