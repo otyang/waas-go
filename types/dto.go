@@ -90,6 +90,7 @@ type (
 		Limit      int
 		StartDate  time.Time
 		EndDate    time.Time
+		Direction  string
 		CustomerID string
 		WalletID   string
 		Currency   []string
@@ -98,4 +99,9 @@ type (
 		Status     *TransactionStatus
 		Reversed   *bool
 	}
+)
+
+const (
+	DirectionAsc  = "asc"
+	DirectionDesc = "Desc"
 )

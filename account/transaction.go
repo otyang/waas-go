@@ -2,6 +2,7 @@ package account
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/otyang/waas-go/types"
@@ -33,7 +34,7 @@ func (a *Client) UpdateTransactionStatus(ctx context.Context, transactionID stri
 	return transaction, err
 }
 
-func (a *Client) ListTransaction(ctx context.Context, opts types.ListTransactionsFilterOpts) ([]types.Transaction, string, error) {
+func (a *Client) ListTransactions(ctx context.Context, opts types.ListTransactionsFilterOpts) ([]types.Transaction, string, error) {
 	var results []types.Transaction
 
 	if opts.Limit < 1 {
@@ -75,23 +76,20 @@ func (a *Client) ListTransaction(ctx context.Context, opts types.ListTransaction
 			q.Where("reversed_at IS NOT NULL")
 		}
 
-		if opts.EndDate.IsZero() && opts.StartDate.IsZero() {
-			q.OrderExpr("created_at DESC")
-		}
-
-		if opts.EndDate.IsZero() && !opts.StartDate.IsZero() {
-			q.Where("created_at >= ?", opts.StartDate).OrderExpr("created_at ASC")
-		}
-
-		if !opts.EndDate.IsZero() && opts.StartDate.IsZero() {
-			q.Where("created_at <= ?", opts.EndDate).OrderExpr("created_at DESC")
-		}
-
-		if !opts.EndDate.IsZero() && !opts.StartDate.IsZero() {
+		if !opts.StartDate.IsZero() {
 			q.Where("created_at >= ?", opts.StartDate)
+		}
+
+		if !opts.EndDate.IsZero() {
 			q.Where("created_at <= ?", opts.EndDate)
+		}
+
+		if strings.EqualFold(opts.Direction, types.DirectionDesc) {
+			q.OrderExpr("created_at DESC")
+		} else {
 			q.OrderExpr("created_at ASC")
 		}
+
 	}
 
 	if err := q.Scan(ctx); err != nil {

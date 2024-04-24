@@ -22,7 +22,7 @@ func (a *Client) GetWalletByID(ctx context.Context, walletID string) (*types.Wal
 	return &wallet, err
 }
 
-func (acc *Client) GetWalletByUserIDAndCurrencyCode(ctx context.Context, userID, currencyCode string) (*types.Wallet, error) {
+func (acc *Client) GetWalletByCurrencyCode(ctx context.Context, userID, currencyCode string) (*types.Wallet, error) {
 	return acc.GetWalletByID(ctx, types.GenerateWalletID(currencyCode, userID))
 }
 
@@ -35,7 +35,7 @@ func (a *Client) UpdateWallet(ctx context.Context, wallet *types.Wallet) (*types
 	return wallet, err
 }
 
-func (a *Client) ListWallet(ctx context.Context, opts types.ListWalletsFilterOpts) ([]types.Wallet, error) {
+func (a *Client) ListWallets(ctx context.Context, opts types.ListWalletsFilterOpts) ([]types.Wallet, error) {
 	var wallets []types.Wallet
 
 	q := a.db.NewSelect().Model(&wallets)

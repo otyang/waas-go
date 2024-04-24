@@ -18,15 +18,15 @@ type IAccountFeature interface {
 	// wallets
 	CreateWallet(ctx context.Context, wallet *Wallet) (*Wallet, error)
 	GetWalletByID(ctx context.Context, walletID string) (*Wallet, error)
-	GetWalletByUserIDAndCurrencyCode(ctx context.Context, userID, currencyCode string) (*Wallet, error)
+	GetWalletByCurrencyCode(ctx context.Context, userID, currencyCode string) (*Wallet, error)
 	UpdateWallet(ctx context.Context, wallet *Wallet) (*Wallet, error)
-	ListWallet(ctx context.Context, opts ListWalletsFilterOpts) ([]Wallet, error)
+	ListWallets(ctx context.Context, opts ListWalletsFilterOpts) ([]Wallet, error)
 
 	// Transaction Management
 	CreateTransaction(ctx context.Context, transaction *Transaction) (*Transaction, error)
 	GetTransaction(ctx context.Context, transactionID string) (*Transaction, error)
 	UpdateTransaction(ctx context.Context, transaction *Transaction) (*Transaction, error)
-	ListTransaction(ctx context.Context, opts ListTransactionsFilterOpts) ([]Transaction, string, error)
+	ListTransactions(ctx context.Context, opts ListTransactionsFilterOpts) ([]Transaction, string, error)
 
 	// actions
 	Credit(ctx context.Context, opts CreditWalletOpts) (*CreditWalletResponse, error)
@@ -61,13 +61,11 @@ func GenerateID(size int) string {
 	return gonanoid.MustGenerate("0123456789abcdefghijklmnopqrstuvwxyz", size)
 }
 
-// helps in making the in sql case insensitive
+// makes a slice of strings insensitive
 func ToLowercaseSlice(strs []string) []string {
 	lowercaseStrs := make([]string, len(strs))
-
 	for i, str := range strs {
-		lowercaseStrs[i] = strings.TrimSpace(strings.ToLower(str)) // Convert each string
+		lowercaseStrs[i] = strings.TrimSpace(strings.ToLower(str))
 	}
-
 	return lowercaseStrs
 }

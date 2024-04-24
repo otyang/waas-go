@@ -131,12 +131,12 @@ func (a *Client) Transfer(ctx context.Context, opts types.TransferRequestOpts) (
 }
 
 func (a *Client) Swap(ctx context.Context, opts types.SwapRequestOpts) (*types.SwapWalletResponse, error) {
-	fromWallet, err := a.GetWalletByUserIDAndCurrencyCode(ctx, opts.CustomerID, opts.FromCurrencyCode)
+	fromWallet, err := a.GetWalletByCurrencyCode(ctx, opts.CustomerID, opts.FromCurrencyCode)
 	if err != nil {
 		return nil, err
 	}
 
-	toWallet, err := a.GetWalletByUserIDAndCurrencyCode(ctx, opts.CustomerID, opts.ToCurrencyCode)
+	toWallet, err := a.GetWalletByCurrencyCode(ctx, opts.CustomerID, opts.ToCurrencyCode)
 	if err != nil {
 		return nil, err
 	}

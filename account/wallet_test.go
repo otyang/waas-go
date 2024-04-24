@@ -36,7 +36,7 @@ func TestAccount_Wallets_and_all_its_assosiated_functions(t *testing.T) {
 	})
 
 	t.Run("Get wallet by Id & CurrencyCode", func(t *testing.T) {
-		got, err = acc.GetWalletByUserIDAndCurrencyCode(context.Background(), "cust_123", "ngn")
+		got, err = acc.GetWalletByCurrencyCode(context.Background(), "cust_123", "ngn")
 		assert.NoError(t, err)
 		assert.Equal(t, got.VersionId, got.VersionId)
 	})
@@ -55,13 +55,13 @@ func TestAccount_Wallets_and_all_its_assosiated_functions(t *testing.T) {
 	assert.NoError(t, err)
 
 	t.Run("list without filters", func(t *testing.T) {
-		gotList, err := acc.ListWallet(context.Background(), types.ListWalletsFilterOpts{})
+		gotList, err := acc.ListWallets(context.Background(), types.ListWalletsFilterOpts{})
 		assert.NoError(t, err)
 		assert.NotEmpty(t, gotList)
 	})
 
 	t.Run("list with filters", func(t *testing.T) {
-		gotList, err := acc.ListWallet(context.Background(), types.ListWalletsFilterOpts{
+		gotList, err := acc.ListWallets(context.Background(), types.ListWalletsFilterOpts{
 			CustomerID:    "customerID",
 			CurrencyCodes: []string{"NGN"},
 			Status:        types.WalletStatusActive,

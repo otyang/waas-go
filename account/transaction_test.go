@@ -58,7 +58,7 @@ func TestClient_Transaction_and_all_its_assosiated_functions(t *testing.T) {
 	})
 
 	t.Run("list without filters", func(t *testing.T) {
-		gotList, nextCursor, err := a.ListTransaction(context.Background(), types.ListTransactionsFilterOpts{
+		gotList, nextCursor, err := a.ListTransactions(context.Background(), types.ListTransactionsFilterOpts{
 			Limit: 400,
 		})
 		assert.NoError(t, err)
@@ -69,7 +69,7 @@ func TestClient_Transaction_and_all_its_assosiated_functions(t *testing.T) {
 	})
 
 	t.Run("list with filters", func(t *testing.T) {
-		gotList, nextCursor, err := a.ListTransaction(context.Background(), types.ListTransactionsFilterOpts{
+		gotList, nextCursor, err := a.ListTransactions(context.Background(), types.ListTransactionsFilterOpts{
 			Limit:      0,
 			StartDate:  time.Time{},
 			EndDate:    time.Time{},
