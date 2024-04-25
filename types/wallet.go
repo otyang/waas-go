@@ -43,7 +43,7 @@ type Wallet struct {
 	CreatedAt        time.Time       `json:"createdAt" bun:",notnull"`
 	UpdatedAt        time.Time       `json:"updatedAt" bun:",notnull"`
 	VersionId        string          `json:"-" bun:",notnull"`
-	Currency         Currency        `json:"currency" bun:"rel:has-one,join:currency_code=code"`
+	// Currency         Currency        `json:"currency" bun:"rel:has-one,join:currency_code=code"`
 }
 
 // NewWallet creates a new Wallet instance.
@@ -59,7 +59,6 @@ func NewWallet(customerID, currencyCode string) *Wallet {
 		CreatedAt:        time.Now(),
 		UpdatedAt:        time.Now(),
 		VersionId:        GenerateID("v_", 7),
-		Currency:         Currency{},
 	}
 }
 

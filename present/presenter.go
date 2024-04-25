@@ -7,17 +7,23 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+type AllWalletsAndTotal struct {
+	OverallTotalUSDBalance decimal.Decimal
+	NewWalletsResponses    []NewWalletResponse
+}
+
 type NewWalletResponse struct {
-	ID                string             `json:"id"`
-	CustomerID        string             `json:"customerId"`
-	Currency          types.Currency     `json:"currency"`
-	AvailableBalance  decimal.Decimal    `json:"availableBalance"`
-	LienBalance       decimal.Decimal    `json:"lienBalance"`
-	TotalBalance      decimal.Decimal    `json:"totalBalance"`
-	TotalBalanceInUSD decimal.Decimal    `json:"totalBalanceInUSD"`
-	Status            types.WalletStatus `json:"status"`
-	CreatedAt         time.Time          `json:"createdAt"`
-	UpdatedAt         time.Time          `json:"updatedAt"`
+	ID                string          `json:"id"`
+	CustomerID        string          `json:"customerId"`
+	Currency          types.Currency  `json:"currency"`
+	AvailableBalance  decimal.Decimal `json:"availableBalance"`
+	LienBalance       decimal.Decimal `json:"lienBalance"`
+	TotalBalance      decimal.Decimal `json:"totalBalance"`
+	TotalBalanceInUSD decimal.Decimal `json:"totalBalanceInUSD"`
+	IsFrozen          bool            `json:"isFrozen"`
+	IsClosed          bool            `json:"isClosed"`
+	CreatedAt         time.Time       `json:"createdAt"`
+	UpdatedAt         time.Time       `json:"updatedAt"`
 }
 
 type TotalBalanceResponse struct {
@@ -27,7 +33,7 @@ type TotalBalanceResponse struct {
 	Total          string
 }
 
-func WalletList(wallets []*types.Wallet) ([]NewWalletResponse, decimal.Decimal, error) {
+func WalletList(wallets []*types.Wallet, currencies []types.Currency) (*AllWalletsAndTotal, error) {
 	var (
 		allWalletsBalanceInUSD decimal.Decimal
 		walletResponses        []NewWalletResponse
@@ -36,35 +42,44 @@ func WalletList(wallets []*types.Wallet) ([]NewWalletResponse, decimal.Decimal, 
 	for _, w := range wallets {
 		var usdEquivalent decimal.Decimal
 
-		if !w.Currency.RateBuy.Equal(decimal.Zero) {
+		wCurrency, err := types.FindCurrency(currencies, "NGN")
+		if err != nil {
+			return nil, err
+		}
+
+		if !wCurrency.RateBuy.Equal(decimal.Zero) {
 			// anything divide by 0 is error/panic. let's avoid it
-			usdEquivalent = w.TotalBalance().Div(w.Currency.RateBuy).RoundBank(int32(w.Currency.Precision))
+			usdEquivalent = w.TotalBalance().Div(wCurrency.RateBuy).RoundBank(int32(wCurrency.Precision))
 			allWalletsBalanceInUSD = allWalletsBalanceInUSD.Add(usdEquivalent)
 		}
 
 		walletResponses = append(walletResponses, NewWalletResponse{
 			ID:                w.ID,
 			CustomerID:        w.CustomerID,
-			Currency:          w.Currency,
-			AvailableBalance:  w.AvailableBalance.RoundBank(int32(w.Currency.Precision)),
-			LienBalance:       w.LienBalance.RoundBank(int32(w.Currency.Precision)),
-			TotalBalance:      w.TotalBalance().RoundBank(int32(w.Currency.Precision)),
+			Currency:          *wCurrency,
+			AvailableBalance:  w.AvailableBalance.RoundBank(int32(wCurrency.Precision)),
+			LienBalance:       w.LienBalance.RoundBank(int32(wCurrency.Precision)),
+			TotalBalance:      w.TotalBalance().RoundBank(int32(wCurrency.Precision)),
 			TotalBalanceInUSD: usdEquivalent,
-			Status:            w.Status,
+			IsFrozen:          w.IsFrozen,
+			IsClosed:          w.IsClosed,
 			CreatedAt:         w.CreatedAt,
 			UpdatedAt:         w.UpdatedAt,
 		})
 	}
 
-	return walletResponses, allWalletsBalanceInUSD, nil
+	return &AllWalletsAndTotal{
+		OverallTotalUSDBalance: allWalletsBalanceInUSD,
+		NewWalletsResponses:    walletResponses,
+	}, nil
 }
 
 func Wallet(wallet *types.Wallet, currencies []types.Currency) (*NewWalletResponse, error) {
-	response, _, err := WalletList([]*types.Wallet{wallet})
+	response, err := WalletList([]*types.Wallet{wallet}, currencies)
 	if err != nil {
 		return nil, err
 	}
-	return &response[0], nil
+	return &response.NewWalletsResponses[0], nil
 }
 
 func TotalBalances(totalAmountUSD decimal.Decimal, currencies []types.Currency) ([]TotalBalanceResponse, error) {

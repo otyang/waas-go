@@ -20,7 +20,9 @@ type (
 		Wallet      *Wallet
 		Transaction *Transaction
 	}
+)
 
+type (
 	// DebitWalletOpts defines parameters for debiting a wallet.
 	DebitWalletOpts struct {
 		WalletID  string
@@ -35,7 +37,9 @@ type (
 		Wallet      *Wallet
 		Transaction *Transaction
 	}
+)
 
+type (
 	// TransferOpts defines parameters for transferring funds between wallets.
 	TransferRequestOpts struct {
 		FromWalletID string          `json:"fromWid"`
@@ -51,7 +55,9 @@ type (
 		FromTransaction *Transaction
 		ToTransaction   *Transaction
 	}
+)
 
+type (
 	// ReverseOpts defines parameters for reversing a transaction.
 	ReverseRequestOpts struct {
 		TransactionID string `json:"transactionId"`
@@ -62,7 +68,9 @@ type (
 		NewTx  *Transaction
 		Wallet *Wallet
 	}
+)
 
+type (
 	// SwapOpts defines parameters for swapping currencies between wallets.
 	SwapRequestOpts struct {
 		CustomerID       string
@@ -79,7 +87,9 @@ type (
 		FromTransaction *Transaction
 		ToTransaction   *Transaction
 	}
+)
 
+type (
 	ListWalletsFilterOpts struct {
 		CustomerID    string
 		CurrencyCodes []string

@@ -131,12 +131,12 @@ func (a *Client) Transfer(ctx context.Context, opts types.TransferRequestOpts) (
 }
 
 func (a *Client) Swap(ctx context.Context, opts types.SwapRequestOpts) (*types.SwapWalletResponse, error) {
-	fromWallet, err := a.GetWalletByCurrencyCode(ctx, opts.CustomerID, opts.FromCurrencyCode)
+	fromWallet, err := a.GetWalletByCurrencyCode(ctx, opts.FromCurrencyCode, opts.CustomerID)
 	if err != nil {
 		return nil, err
 	}
 
-	toWallet, err := a.GetWalletByCurrencyCode(ctx, opts.CustomerID, opts.ToCurrencyCode)
+	toWallet, err := a.GetWalletByCurrencyCode(ctx, opts.ToCurrencyCode, opts.CustomerID)
 	if err != nil {
 		return nil, err
 	}
@@ -146,10 +146,13 @@ func (a *Client) Swap(ctx context.Context, opts types.SwapRequestOpts) (*types.S
 		return nil, err
 	}
 
-	fromTrsn, toTrsn := types.NewTransactionForSwap(fromWallet, toWallet, opts.FromAmount, opts.ToAmount, opts.FromFee)
+	fromTrsn, toTrsn := types.NewTransactionForSwap(
+		fromWallet, toWallet, opts.FromAmount, opts.ToAmount, opts.FromFee,
+	)
 
-	err = a.WithTxBulkUpdateWalletAndInsertTransaction(ctx, []*types.Wallet{fromWallet, toWallet}, []*types.Transaction{fromTrsn, toTrsn})
-	if err != nil {
+	if err = a.WithTxBulkUpdateWalletAndInsertTransaction(
+		ctx, []*types.Wallet{fromWallet, toWallet}, []*types.Transaction{fromTrsn, toTrsn},
+	); err != nil {
 		return nil, err
 	}
 

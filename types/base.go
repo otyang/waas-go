@@ -43,7 +43,7 @@ func (e *WaasError) Error() string { return e.msg }
 
 // NewWaasError creates a new WalletError.
 func NewWaasError(msg string) *WaasError {
-	return &WaasError{msg}
+	return &WaasError{msg: msg}
 }
 
 // IsWaasError checks if an error is of type WaasError.
