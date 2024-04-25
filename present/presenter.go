@@ -42,7 +42,7 @@ func WalletList(wallets []*types.Wallet, currencies []types.Currency) (*AllWalle
 	for _, w := range wallets {
 		var usdEquivalent decimal.Decimal
 
-		wCurrency, err := types.FindCurrency(currencies, "NGN")
+		wCurrency, err := types.FindCurrency(currencies, w.CurrencyCode)
 		if err != nil {
 			return nil, err
 		}
@@ -50,9 +50,9 @@ func WalletList(wallets []*types.Wallet, currencies []types.Currency) (*AllWalle
 		if !wCurrency.RateBuy.Equal(decimal.Zero) {
 			// anything divide by 0 is error/panic. let's avoid it
 			usdEquivalent = w.TotalBalance().Div(wCurrency.RateBuy).RoundBank(int32(wCurrency.Precision))
-			allWalletsBalanceInUSD = allWalletsBalanceInUSD.Add(usdEquivalent)
 		}
 
+		allWalletsBalanceInUSD = allWalletsBalanceInUSD.Add(usdEquivalent)
 		walletResponses = append(walletResponses, NewWalletResponse{
 			ID:                w.ID,
 			CustomerID:        w.CustomerID,

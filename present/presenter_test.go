@@ -15,7 +15,7 @@ func TestWalletListSuccess(t *testing.T) {
 	currencies := []types.Currency{
 		{
 			Code:      "ngn",
-			RateBuy:   decimal.NewFromFloat(415),
+			RateBuy:   decimal.NewFromFloat(500),
 			Precision: 2,
 		},
 		{
@@ -53,9 +53,7 @@ func TestWalletListSuccess(t *testing.T) {
 			AvailableBalance:  decimal.NewFromFloat(1000).RoundBank(int32(currencies[0].Precision)),
 			LienBalance:       decimal.NewFromFloat(0).RoundBank(int32(currencies[0].Precision)),
 			TotalBalance:      decimal.NewFromFloat(1000).RoundBank(int32(currencies[0].Precision)),
-			TotalBalanceInUSD: decimal.NewFromFloat(2.41).RoundBank(int32(currencies[0].Precision)),
-			IsFrozen:          false,
-			IsClosed:          false,
+			TotalBalanceInUSD: decimal.NewFromFloat(2.00).RoundBank(int32(currencies[0].Precision)),
 		},
 		{
 			ID:                "2",
@@ -65,13 +63,11 @@ func TestWalletListSuccess(t *testing.T) {
 			LienBalance:       decimal.NewFromFloat(10).RoundBank(int32(currencies[1].Precision)),
 			TotalBalance:      decimal.NewFromFloat(60).RoundBank(int32(currencies[1].Precision)),
 			TotalBalanceInUSD: decimal.NewFromFloat(60).RoundBank(int32(currencies[1].Precision)),
-			IsFrozen:          false,
-			IsClosed:          false,
 		},
 	}
 
 	assert.Equal(t, expectedNewWalletResponses, responses.NewWalletsResponses)
-	assert.Equal(t, decimal.NewFromFloat(62.41).String(), responses.OverallTotalUSDBalance.String())
+	assert.Equal(t, decimal.NewFromFloat(62.00).String(), responses.OverallTotalUSDBalance.String())
 }
 
 // Test for zero rate: Ensures handling of wallets with zero rate currencies.
