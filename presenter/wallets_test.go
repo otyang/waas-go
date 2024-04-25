@@ -42,10 +42,11 @@ func TestWalletListSuccess(t *testing.T) {
 		},
 	}
 
-	responses, err := WalletList(wallets, currencies)
+	p := New()
+	responses, err := p.WalletList(wallets, currencies)
 	assert.NoError(t, err)
 
-	expectedNewWalletResponses := []NewWalletResponse{
+	expectedWalletResponses := []WalletResponses{
 		{
 			ID:                "1",
 			CustomerID:        "customer1",
@@ -66,7 +67,7 @@ func TestWalletListSuccess(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, expectedNewWalletResponses, responses.NewWalletsResponses)
+	assert.Equal(t, expectedWalletResponses, responses.NewWalletsResponses)
 	assert.Equal(t, decimal.NewFromFloat(62.00).String(), responses.OverallTotalUSDBalance.String())
 }
 
@@ -93,7 +94,8 @@ func TestWalletListZeroRate(t *testing.T) {
 		},
 	}
 
-	responses, err := WalletList(wallets, currencies)
+	p := New()
+	responses, err := p.WalletList(wallets, currencies)
 
 	// Assert
 	assert.NoError(t, err)
@@ -109,7 +111,8 @@ func TestTotalBalancesCurrencyNotFound(t *testing.T) {
 	currencies := []types.Currency{{Code: "EUR"}}
 
 	// Act
-	balances, err := TotalBalances(totalAmountUSD, currencies)
+	p := New()
+	balances, err := p.TotalBalances(totalAmountUSD, currencies)
 
 	// Assert
 	assert.Error(t, err)
@@ -129,7 +132,8 @@ func TestTotalBalancesSuccess(t *testing.T) {
 	}
 
 	// Act
-	balances, err := TotalBalances(totalAmountUSD, currencies)
+	p := New()
+	balances, err := p.TotalBalances(totalAmountUSD, currencies)
 	assert.NoError(t, err)
 
 	expectedBalances := []TotalBalanceResponse{

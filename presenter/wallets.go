@@ -7,12 +7,18 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-type AllWalletsAndTotal struct {
-	OverallTotalUSDBalance decimal.Decimal
-	NewWalletsResponses    []NewWalletResponse
+type Client struct{}
+
+func New() *Client {
+	return &Client{}
 }
 
-type NewWalletResponse struct {
+type AllWalletsAndTotal struct {
+	OverallTotalUSDBalance decimal.Decimal
+	NewWalletsResponses    []WalletResponses
+}
+
+type WalletResponses struct {
 	ID                string          `json:"id"`
 	CustomerID        string          `json:"customerId"`
 	Currency          types.Currency  `json:"currency"`
@@ -33,10 +39,10 @@ type TotalBalanceResponse struct {
 	Total          string
 }
 
-func WalletList(wallets []*types.Wallet, currencies []types.Currency) (*AllWalletsAndTotal, error) {
+func (p *Client) WalletList(wallets []*types.Wallet, currencies []types.Currency) (*AllWalletsAndTotal, error) {
 	var (
 		allWalletsBalanceInUSD decimal.Decimal
-		walletResponses        []NewWalletResponse
+		walletResponses        []WalletResponses
 	)
 
 	for _, w := range wallets {
@@ -53,7 +59,7 @@ func WalletList(wallets []*types.Wallet, currencies []types.Currency) (*AllWalle
 		}
 
 		allWalletsBalanceInUSD = allWalletsBalanceInUSD.Add(usdEquivalent)
-		walletResponses = append(walletResponses, NewWalletResponse{
+		walletResponses = append(walletResponses, WalletResponses{
 			ID:                w.ID,
 			CustomerID:        w.CustomerID,
 			Currency:          *wCurrency,
@@ -74,15 +80,15 @@ func WalletList(wallets []*types.Wallet, currencies []types.Currency) (*AllWalle
 	}, nil
 }
 
-func Wallet(wallet *types.Wallet, currencies []types.Currency) (*NewWalletResponse, error) {
-	response, err := WalletList([]*types.Wallet{wallet}, currencies)
+func (p *Client) Wallet(wallet *types.Wallet, currencies []types.Currency) (*WalletResponses, error) {
+	response, err := p.WalletList([]*types.Wallet{wallet}, currencies)
 	if err != nil {
 		return nil, err
 	}
 	return &response.NewWalletsResponses[0], nil
 }
 
-func TotalBalances(totalAmountUSD decimal.Decimal, currencies []types.Currency) ([]TotalBalanceResponse, error) {
+func (p *Client) TotalBalances(totalAmountUSD decimal.Decimal, currencies []types.Currency) ([]TotalBalanceResponse, error) {
 	ngn, err := types.FindCurrency(currencies, "NGN")
 	if err != nil {
 		return nil, err

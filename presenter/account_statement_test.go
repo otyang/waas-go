@@ -1,6 +1,7 @@
 package presenter
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -8,6 +9,10 @@ import (
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 )
+
+func toPointer(s string) *string {
+	return &s
+}
 
 // Define a function to create mock transactions (customize as needed)
 func createMockTransaction(isDebit bool, amount, fee, balanceAfter float64) *types.Transaction {
@@ -37,34 +42,34 @@ func TestCalculateAnalyticsAndTransactions(t *testing.T) {
 	expectedTxns := []TransactionStatement{
 		{
 			Date:        time.Now().Format(timeLayout),
-			Description: "",
-			Credit:      "0.00",
+			Description: " ",
+			Credit:      "",
 			Debit:       "2.00",
 			Fee:         "0.25",
 			Balance:     "2.00",
 		},
 		{
 			Date:        time.Now().Format(timeLayout),
-			Description: "",
+			Description: " ",
 			Credit:      "8.00",
-			Debit:       "0.00",
-			Fee:         "0.25",
+			Debit:       "",
+			Fee:         "0.45",
 			Balance:     "0.00",
 		},
 		{
 			Date:        time.Now().Format(timeLayout),
-			Description: "",
-			Credit:      "0.00",
+			Description: " ",
+			Credit:      "",
 			Debit:       "10.00",
-			Fee:         "0.25",
+			Fee:         "0.65",
 			Balance:     "40.00",
 		},
 	}
 
 	transactions := []*types.Transaction{
 		createMockTransaction(true, 2, 0.25, 2.00),
-		createMockTransaction(false, 8.0, 0.25, 0.00),
-		createMockTransaction(true, 10.0, 0.25, 40.00),
+		createMockTransaction(false, 8.0, 0.45, 0.00),
+		createMockTransaction(true, 10.0, 0.65, 40.00),
 	}
 
 	var precision int32 = 2
@@ -99,9 +104,30 @@ func Test_createTransactionStatement(t *testing.T) {
 				Date:        "27-Mar-2024",
 				Description: "DEBIT Test Transaction",
 				Debit:       "10.00",
-				Credit:      "0.00",
+				Credit:      "",
 				Fee:         "0.50",
 				Balance:     "50.00",
+			},
+		},
+		{
+			name: "Credit transaction",
+			inputTx: &types.Transaction{
+				Type:         "CREDIT",
+				Narration:    toPointer("Test Transaction"),
+				IsDebit:      false,
+				Amount:       decimal.NewFromInt(20),
+				Fee:          decimal.NewFromFloat(0.5),
+				BalanceAfter: decimal.NewFromInt(100),
+				CreatedAt:    time.Date(2024, 3, 27, 0, 0, 0, 0, time.UTC),
+			},
+			precision: 2,
+			expected: TransactionStatement{
+				Date:        "27-Mar-2024",
+				Description: "CREDIT Test Transaction",
+				Debit:       "",
+				Credit:      "20.00",
+				Fee:         "0.50",
+				Balance:     "100.00",
 			},
 		},
 	}
@@ -114,47 +140,43 @@ func Test_createTransactionStatement(t *testing.T) {
 	}
 }
 
-func toPointer(s string) *string {
-	return &s
+func TestFormatAmountDebit(t *testing.T) {
+	amount := decimal.NewFromFloat(123.45)
+	precision := int32(2)
+	creditAmount, debitAmount := formatAmount(amount, true, precision)
+
+	assert.Equal(t, "", creditAmount)
+	assert.Equal(t, amount.String(), debitAmount)
 }
 
-func TestFormatAmount(t *testing.T) {
-	t.Parallel()
+func TestFormatAmountCredit(t *testing.T) {
+	amount := decimal.NewFromFloat(123.45)
+	precision := int32(2)
+	creditAmount, debitAmount := formatAmount(amount, false, precision)
 
-	testCases := []struct {
-		name      string
-		amount    decimal.Decimal
-		isDebit   bool
-		precision int32
-		expected  string
-	}{
-		{
-			name:      "Debit, positive amount",
-			amount:    decimal.NewFromFloat(12.345),
-			isDebit:   true,
-			precision: 2,
-			expected:  "12.35", // Note: StringFixed rounds
-		},
-		{
-			name:      "Debit, zero amount",
-			amount:    decimal.Zero,
-			isDebit:   true,
-			precision: 2,
-			expected:  "0.00",
-		},
-		{
-			name:      "Credit, positive amount",
-			amount:    decimal.NewFromFloat(987.65),
-			isDebit:   false,
-			precision: 2,
-			expected:  "0.00",
-		},
+	assert.Equal(t, amount.String(), creditAmount)
+	assert.Equal(t, "", debitAmount)
+}
+
+func TestGetNarrationWithNarration(t *testing.T) {
+	tx := &types.Transaction{
+		Type:      types.TransactionTypeSwap,
+		Narration: toPointer("Some narration"),
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			result := formatAmount(tc.amount, tc.isDebit, tc.precision)
-			assert.Equal(t, result, tc.expected)
-		})
+	expectedNarration := string(types.TransactionTypeSwap) + " " + "Some narration"
+	actualNarration := getNarration(tx)
+
+	assert.True(t, strings.EqualFold(expectedNarration, actualNarration))
+}
+
+func TestGetNarrationWithoutNarration(t *testing.T) {
+	tx := &types.Transaction{
+		Type: types.TransactionTypeWithdrawal,
 	}
+
+	expectedNarration := string(types.TransactionTypeWithdrawal) + " "
+	actualNarration := getNarration(tx)
+
+	assert.True(t, strings.EqualFold(expectedNarration, actualNarration))
 }

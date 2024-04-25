@@ -46,7 +46,7 @@ type (
 	}
 )
 
-func NewAccountStatement(
+func (p *Client) AccountStatement(
 	wallet *types.Wallet,
 	transactions []*types.Transaction,
 	currencyName string,
