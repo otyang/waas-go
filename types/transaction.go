@@ -114,6 +114,7 @@ func NewTransactionForCreditEntry(wallet *Wallet, amount, fee decimal.Decimal, t
 		Status:         TransactionStatusSuccess,
 		Narration:      nil,
 		CounterpartyID: nil,
+		ReversedAt:     nil,
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
 	}
@@ -135,6 +136,7 @@ func NewTransactionForDebitEntry(wallet *Wallet, amount, fee decimal.Decimal, tx
 		Status:         txnStatus,
 		Narration:      nil,
 		CounterpartyID: nil,
+		ReversedAt:     nil,
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
 	}
@@ -171,8 +173,8 @@ func NewTransactionForReverseEntry(amount, fee decimal.Decimal, wallet *Wallet, 
 		newTX = NewTransactionForDebitEntry(wallet, amount, fee, oldTX.Type, TransactionStatusSuccess)
 	}
 
-	newTX.SetCounterpartyID(oldTX.ID)
 	oldTX.SetCounterpartyID(newTX.ID)
+	newTX.SetCounterpartyID(oldTX.ID)
 	t := time.Now()
 	oldTX.ReversedAt = &t
 

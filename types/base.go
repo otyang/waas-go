@@ -53,12 +53,11 @@ func IsWaasError(err error) bool {
 }
 
 func NewTransactionID() string {
-	return time.Now().UTC().Format("20060102") + "_" + GenerateID(8)
+	return GenerateID("txn_"+time.Now().UTC().Format("20060102")+"_", 8)
 }
 
-func GenerateID(size int) string {
-	// time.Now().UTC().Format("2006-01-02 15:04:05.999999")
-	return gonanoid.MustGenerate("0123456789abcdefghijklmnopqrstuvwxyz", size)
+func GenerateID(prefix string, size int) string {
+	return prefix + gonanoid.MustGenerate("0123456789abcdefghijklmnopqrstuvwxyz", size)
 }
 
 // makes a slice of strings insensitive

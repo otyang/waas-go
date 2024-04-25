@@ -51,7 +51,6 @@ func toPointer[T any](v T) *T {
 func TestMain(m *testing.M) {
 	TestDB = setUp()
 	defer tearDown(TestDB)
-
 	exitVal := m.Run()
 	os.Exit(exitVal)
 }

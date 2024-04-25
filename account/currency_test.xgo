@@ -19,8 +19,8 @@ func TestAccount_CreateCurrency(t *testing.T) {
 
 	gotNGN, err := acc.CreateCurrency(context.Background(), types.Currency{
 		Code:          "NGN",
-		Name:          "",
-		Symbol:        "",
+		Name:          "Naira",
+		Symbol:        "#",
 		IsFiat:        false,
 		IsStableCoin:  false,
 		IconURL:       "",

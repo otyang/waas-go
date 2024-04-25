@@ -25,7 +25,9 @@ func TestAccount_Wallets_and_all_its_assosiated_functions(t *testing.T) {
 	t.Run("Re-Create same existing wallet. It should ignore", func(t *testing.T) {
 		got, err = acc.CreateWallet(context.Background(), got)
 		assert.NoError(t, err)
-		assert.Equal(t, w.VersionId, got.VersionId) // if new is created/updated VersionID will be different
+		assert.Equal(t, w.CurrencyCode, got.CurrencyCode) //
+		assert.Equal(t, w.CustomerID, got.CustomerID)     //
+		assert.Equal(t, w.VersionId, got.VersionId)       // if new is created/updated VersionID will be different
 	})
 
 	t.Run("Get wallet", func(t *testing.T) {
@@ -36,7 +38,7 @@ func TestAccount_Wallets_and_all_its_assosiated_functions(t *testing.T) {
 	})
 
 	t.Run("Get wallet by Id & CurrencyCode", func(t *testing.T) {
-		got, err = acc.GetWalletByCurrencyCode(context.Background(), "cust_123", "ngn")
+		got, err = acc.GetWalletByCurrencyCode(context.Background(), "ngn", "cust_123")
 		assert.NoError(t, err)
 		assert.Equal(t, got.VersionId, got.VersionId)
 	})
@@ -64,7 +66,6 @@ func TestAccount_Wallets_and_all_its_assosiated_functions(t *testing.T) {
 		gotList, err := acc.ListWallets(context.Background(), types.ListWalletsFilterOpts{
 			CustomerID:    "customerID",
 			CurrencyCodes: []string{"NGN"},
-			Status:        types.WalletStatusActive,
 		})
 		assert.NoError(t, err)
 		assert.Empty(t, gotList)

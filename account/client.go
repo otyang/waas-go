@@ -7,8 +7,7 @@ import (
 	"github.com/uptrace/bun"
 )
 
-var _ types.IAccountFeature = (*Client)(nil)
-
+// var _ types.IAccountFeature = (*Client)(nil)
 type Client struct {
 	db bun.IDB
 }

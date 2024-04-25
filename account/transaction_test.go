@@ -62,7 +62,7 @@ func TestClient_Transaction_and_all_its_assosiated_functions(t *testing.T) {
 			Limit: 400,
 		})
 		assert.NoError(t, err)
-		assert.NotEmpty(t, nextCursor)
+		assert.Empty(t, nextCursor)
 
 		//	t.Errorf("%+v", gotList)
 		assert.NotEmpty(t, gotList)

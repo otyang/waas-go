@@ -9,29 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGenerateWalletID(t *testing.T) {
-	t.Parallel()
-
-	testCases := []struct {
-		name         string
-		currencyCode string
-		userID       string
-		expectedID   string
-	}{
-		{name: "Valid inputs", currencyCode: "USD", userID: "user1-Nick", expectedID: "usd-user1-Nick"},
-		{name: "Currency code in lower case", currencyCode: "eur", userID: "user2", expectedID: "eur-user2"},
-		{name: "Currency code in upper case", currencyCode: "BTC", userID: "user-3", expectedID: "btc-user-3"},
-		{name: "Special characters in user ID", currencyCode: "BTC", userID: "user_4!", expectedID: "btc-user_4!"},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			actualID := GenerateWalletID(tc.currencyCode, tc.userID)
-			assert.Equal(t, tc.expectedID, actualID)
-		})
-	}
-}
-
 func TestNewWallet(t *testing.T) {
 	t.Parallel()
 
@@ -43,11 +20,12 @@ func TestNewWallet(t *testing.T) {
 	wallet := NewWallet(customerID, currencyCode)
 
 	// Assert
-	assert.Equal(t, GenerateWalletID(currencyCode, customerID), wallet.ID)
+	assert.NotEmpty(t, wallet.ID)
 	assert.Equal(t, customerID, wallet.CustomerID)
 	assert.True(t, strings.EqualFold(currencyCode, wallet.CurrencyCode))
 	assert.Equal(t, decimal.Zero, wallet.AvailableBalance)
-	assert.Equal(t, WalletStatusActive, wallet.Status)
+	assert.False(t, wallet.IsClosed)
+	assert.False(t, wallet.IsFrozen)
 	assert.True(t, wallet.CreatedAt.Before(wallet.UpdatedAt))
 }
 
@@ -101,15 +79,40 @@ func TestWallet_Freeze_Unfreeze(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		initialStatus  WalletStatus
+		initialWallet  *Wallet
 		operation      func(w *Wallet) error
 		expectedError  error
-		expectedStatus WalletStatus
+		expectedWallet *Wallet
 	}{
-		{"Freeze active wallet", WalletStatusActive, func(w *Wallet) error { return w.Freeze() }, nil, WalletStatusFrozen},
-		{"Unfreeze frozen wallet", WalletStatusFrozen, func(w *Wallet) error { return w.Unfreeze() }, nil, WalletStatusActive},
-		{"Freeze closed wallet", WalletStatusClosed, func(w *Wallet) error { return w.Freeze() }, ErrWalletClosed, WalletStatusClosed},
-		{"Unfreeze closed wallet", WalletStatusClosed, func(w *Wallet) error { return w.Unfreeze() }, ErrWalletClosed, WalletStatusClosed},
+		{
+			"Freeze active wallet",
+			&Wallet{IsFrozen: false, IsClosed: false},
+			func(w *Wallet) error { return w.Freeze() },
+			nil,
+			&Wallet{IsFrozen: true, IsClosed: false},
+		},
+		{
+			"Unfreeze frozen wallet",
+			&Wallet{IsFrozen: true, IsClosed: false},
+			func(w *Wallet) error { return w.Unfreeze() },
+			nil,
+			&Wallet{IsFrozen: false, IsClosed: false},
+		},
+
+		{
+			"Freeze closed wallet",
+			&Wallet{IsFrozen: false, IsClosed: true},
+			func(w *Wallet) error { return w.Freeze() },
+			ErrWalletClosed,
+			&Wallet{IsFrozen: false, IsClosed: true},
+		},
+		{
+			"Unfreeze closed wallet",
+			&Wallet{IsFrozen: true, IsClosed: true},
+			func(w *Wallet) error { return w.Unfreeze() },
+			ErrWalletClosed,
+			&Wallet{IsFrozen: true, IsClosed: true},
+		},
 	}
 
 	for _, tt := range tests {
@@ -117,11 +120,10 @@ func TestWallet_Freeze_Unfreeze(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			wallet := &Wallet{Status: tt.initialStatus}
-
-			err := tt.operation(wallet)
+			err := tt.operation(tt.initialWallet)
 			assert.Equal(t, tt.expectedError, err)
-			assert.Equal(t, tt.expectedStatus, wallet.Status)
+			assert.Equal(t, tt.expectedWallet.IsFrozen, tt.initialWallet.IsFrozen)
+			assert.Equal(t, tt.expectedWallet.IsClosed, tt.initialWallet.IsClosed)
 		})
 	}
 }
@@ -148,7 +150,7 @@ func TestCreditBalance(t *testing.T) {
 		{
 			name: "Frozen wallet",
 			wallet: &Wallet{
-				Status:           WalletStatusFrozen,
+				IsFrozen:         true,
 				AvailableBalance: decimal.NewFromInt(100),
 			},
 			amount:      decimal.NewFromInt(50),
@@ -159,7 +161,7 @@ func TestCreditBalance(t *testing.T) {
 		{
 			name: "Closed wallet",
 			wallet: &Wallet{
-				Status:           WalletStatusClosed,
+				IsClosed:         true,
 				AvailableBalance: decimal.NewFromInt(100),
 			},
 			amount:      decimal.NewFromInt(50),
@@ -239,7 +241,7 @@ func TestDebitBalance(t *testing.T) {
 		},
 		{
 			name:                     "Debit frozen wallet",
-			wallet:                   &Wallet{AvailableBalance: decimal.NewFromInt(100), Status: WalletStatusFrozen},
+			wallet:                   &Wallet{AvailableBalance: decimal.NewFromInt(100), IsFrozen: true},
 			amount:                   decimal.NewFromInt(50),
 			fee:                      decimal.NewFromInt(10),
 			expectedAvailableBalance: decimal.NewFromInt(100),
@@ -247,7 +249,7 @@ func TestDebitBalance(t *testing.T) {
 		},
 		{
 			name:                     "Debit closed wallet",
-			wallet:                   &Wallet{AvailableBalance: decimal.NewFromInt(100), Status: WalletStatusClosed},
+			wallet:                   &Wallet{AvailableBalance: decimal.NewFromInt(100), IsClosed: true},
 			amount:                   decimal.NewFromInt(50),
 			fee:                      decimal.NewFromInt(10),
 			expectedAvailableBalance: decimal.NewFromInt(100),
@@ -293,7 +295,6 @@ func TestConcurrentCreditDebitBalance(t *testing.T) {
 
 	wallet := &Wallet{
 		AvailableBalance: decimal.NewFromInt(100),
-		Status:           WalletStatusActive,
 	}
 
 	var wg sync.WaitGroup
@@ -331,7 +332,7 @@ func TestConcurrentCreditDebitBalance(t *testing.T) {
 	assert.Equal(t, decimal.NewFromInt(55), wallet.AvailableBalance)
 }
 
-func TestWallet_Transfesr(t *testing.T) {
+func TestWallet_Transfer(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
@@ -482,28 +483,28 @@ func TestSwap(t *testing.T) {
 		wallet1.AvailableBalance = decimal.NewFromFloat(100)
 
 		wallet2 := NewWallet("user1", "EUR")
-		wallet2.Status = WalletStatusClosed
+		wallet2.IsClosed = true
 
 		err := wallet1.Swap(wallet2, decimal.NewFromFloat(100), decimal.Zero, decimal.Zero)
 		assert.Equal(t, ErrWalletClosed.Error(), err.Error())
 
-		wallet2.Status = WalletStatusFrozen
+		wallet2.IsFrozen = true
 		err = wallet1.Swap(wallet2, wallet1.AvailableBalance, decimal.NewFromFloat(40), decimal.Zero)
-		assert.NoError(t, err)
-		assert.Equal(t, wallet2.AvailableBalance.String(), decimal.NewFromFloat(40).String())
+		assert.Error(t, err)
+		assert.Equal(t, decimal.NewFromFloat(0).String(), wallet2.AvailableBalance.String())
 	})
 
 	t.Run("Swap FROM A closed or frozen account", func(t *testing.T) {
 		wallet1 := NewWallet("user1", "USD")
 		wallet1.AvailableBalance = decimal.NewFromFloat(100)
-		wallet1.Status = WalletStatusClosed
+		wallet1.IsClosed = true
 
 		wallet2 := NewWallet("user1", "EUR")
 
 		err := wallet1.Swap(wallet2, decimal.NewFromFloat(100), decimal.Zero, decimal.Zero)
 		assert.Equal(t, ErrWalletClosed.Error(), err.Error())
 
-		wallet1.Status = WalletStatusFrozen
+		wallet1.IsFrozen = true
 		err = wallet1.Swap(wallet2, decimal.NewFromFloat(100), decimal.Zero, decimal.Zero)
 		assert.Equal(t, ErrWalletFrozen.Error(), err.Error())
 	})
@@ -548,11 +549,11 @@ func TestWallet_LienAmount(t *testing.T) {
 			expectedError:   ErrWalletInvalidAmount,
 		},
 		{
-			name:            "Frozen Wallet",
+			name:            "Closed Wallet",
 			initialBalance:  decimal.NewFromInt(100),
 			lockAmount:      decimal.NewFromInt(50),
 			expectedBalance: decimal.NewFromInt(100),
-			expectedError:   ErrWalletFrozen,
+			expectedError:   ErrWalletClosed,
 		},
 	}
 
@@ -563,8 +564,8 @@ func TestWallet_LienAmount(t *testing.T) {
 				// Status:           WalletStatusFrozen,
 			}
 
-			if tc.name == "Frozen Wallet" {
-				wallet.Status = WalletStatusFrozen
+			if tc.name == "Closed Wallet" {
+				wallet.IsClosed = true
 			}
 
 			err := wallet.LienAmount(tc.lockAmount)

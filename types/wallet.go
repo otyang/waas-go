@@ -1,7 +1,6 @@
 package types
 
 import (
-	"strings"
 	"sync"
 	"time"
 
@@ -19,19 +18,6 @@ var (
 	ErrWalletSwapSameOwnerRequired    = NewWaasError("cannot swap between diffetent customers")
 	ErrWalletClosed                   = NewWaasError("cannot operate on a closed wallet")
 )
-
-type WalletStatus string
-
-const (
-	WalletStatusActive WalletStatus = "active"
-	WalletStatusFrozen WalletStatus = "frozen"
-	WalletStatusClosed WalletStatus = "closed"
-)
-
-// GenerateWalletID generates a wallet ID
-func GenerateWalletID(currencyCode, userID string) string {
-	return strings.ToLower(strings.TrimSpace(currencyCode)) + "-" + userID
-}
 
 // Wallet represents a user's wallet for holding and managing funds.
 //   - ID is the unique identifier for the wallet.
@@ -52,7 +38,8 @@ type Wallet struct {
 	CurrencyCode     string          `json:"currencyCode" bun:",notnull"`
 	AvailableBalance decimal.Decimal `json:"availableBalance" bun:"type:decimal(24,8),notnull"`
 	LienBalance      decimal.Decimal `json:"lienBalance" bun:"type:decimal(24,8),notnull"`
-	Status           WalletStatus    `json:"status" bun:",notnull"`
+	IsFrozen         bool            `json:"isFrozen" bun:",notnull"`
+	IsClosed         bool            `json:"isClosed" bun:",notnull"`
 	CreatedAt        time.Time       `json:"createdAt" bun:",notnull"`
 	UpdatedAt        time.Time       `json:"updatedAt" bun:",notnull"`
 	VersionId        string          `json:"-" bun:",notnull"`
@@ -62,42 +49,32 @@ type Wallet struct {
 // NewWallet creates a new Wallet instance.
 func NewWallet(customerID, currencyCode string) *Wallet {
 	return &Wallet{
-		mutex:            sync.Mutex{},
-		ID:               GenerateWalletID(currencyCode, customerID),
+		ID:               GenerateID("w_", 7),
 		CustomerID:       customerID,
-		CurrencyCode:     strings.ToUpper(currencyCode),
+		CurrencyCode:     currencyCode,
 		AvailableBalance: decimal.Zero,
-		Status:           WalletStatusActive,
+		LienBalance:      decimal.Zero,
+		IsFrozen:         false,
+		IsClosed:         false,
 		CreatedAt:        time.Now(),
 		UpdatedAt:        time.Now(),
-		VersionId:        GenerateID(7),
+		VersionId:        GenerateID("v_", 7),
+		Currency:         Currency{},
 	}
 }
 
-func (w *Wallet) IsActive() bool {
-	return w.Status == WalletStatusActive
-}
-
-func (w *Wallet) IsClosed() bool {
-	return w.Status == WalletStatusClosed
-}
-
-func (w *Wallet) IsFrozen() bool {
-	return w.Status == WalletStatusFrozen
-}
-
 func (w *Wallet) CanBeCredited() error {
-	if w.IsClosed() {
+	if w.IsClosed {
 		return ErrWalletClosed
 	}
 	return nil
 }
 
 func (w *Wallet) CanBeDebited() error {
-	if w.IsFrozen() {
+	if w.IsFrozen {
 		return ErrWalletFrozen
 	}
-	if w.Status == WalletStatusClosed {
+	if w.IsClosed {
 		return ErrWalletClosed
 	}
 	return nil
@@ -115,11 +92,11 @@ func (w *Wallet) Freeze() error {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 
-	if w.IsClosed() {
+	if w.IsClosed {
 		return ErrWalletClosed
 	}
 
-	w.Status = WalletStatusFrozen
+	w.IsFrozen = true
 	w.UpdatedAt = time.Now()
 	return nil
 }
@@ -129,11 +106,11 @@ func (w *Wallet) Unfreeze() error {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 
-	if w.IsClosed() {
+	if w.IsClosed {
 		return ErrWalletClosed
 	}
 
-	w.Status = WalletStatusActive
+	w.IsFrozen = false
 	w.UpdatedAt = time.Now()
 	return nil
 }
@@ -257,8 +234,8 @@ func (w *Wallet) LienAmount(amount decimal.Decimal) error {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 
-	if err := w.CanBeDebited(); err != nil {
-		return err
+	if w.IsClosed {
+		return ErrWalletClosed
 	}
 
 	if amount.LessThanOrEqual(decimal.Zero) {
@@ -279,8 +256,8 @@ func (w *Wallet) UnLienAmount(amount decimal.Decimal) error {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 
-	if err := w.CanBeDebited(); err != nil {
-		return err
+	if w.IsClosed {
+		return ErrWalletClosed
 	}
 
 	if amount.LessThanOrEqual(decimal.Zero) {

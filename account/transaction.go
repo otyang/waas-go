@@ -28,9 +28,14 @@ func (a *Client) UpdateTransaction(ctx context.Context, transaction *types.Trans
 	return transaction, err
 }
 
-func (a *Client) UpdateTransactionStatus(ctx context.Context, transactionID string, status types.TransactionStatus) (*types.Transaction, error) {
+func (a *Client) UpdateTransactionStatus(
+	ctx context.Context, transactionID string, status types.TransactionStatus,
+) (*types.Transaction, error) {
 	transaction := &types.Transaction{ID: transactionID, Status: status, UpdatedAt: time.Now()}
-	_, err := a.db.NewUpdate().Model(transaction).Column("status", "updated_at").WherePK().Exec(ctx)
+	_, err := a.db.
+		NewUpdate().
+		Model(transaction).
+		Column("status", "updated_at").WherePK().Exec(ctx)
 	return transaction, err
 }
 
@@ -72,8 +77,10 @@ func (a *Client) ListTransactions(ctx context.Context, opts types.ListTransactio
 			q.Where("lower(status) = lower(?)", opts.Status)
 		}
 
-		if opts.Reversed != nil && *opts.Reversed {
-			q.Where("reversed_at IS NOT NULL")
+		if opts.Reversed != nil {
+			if *opts.Reversed {
+				q.Where("reversed_at IS NOT NULL")
+			}
 		}
 
 		if !opts.StartDate.IsZero() {

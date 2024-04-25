@@ -83,7 +83,8 @@ type (
 	ListWalletsFilterOpts struct {
 		CustomerID    string
 		CurrencyCodes []string
-		Status        WalletStatus
+		IsFrozen      *bool
+		IsClosed      *bool
 	}
 
 	ListTransactionsFilterOpts struct {
