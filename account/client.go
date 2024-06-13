@@ -32,13 +32,6 @@ func NewWithMigration(db *bun.DB) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	// db.NewCreateIndex().
-	// 	Model((*Book)(nil)).
-	// 	Index("category_id_idx").
-	// 	Column("category_id").
-	// 	Exec(ctx)
-
 	_, err = db.NewCreateTable().Model((*types.Currency)(nil)).IfNotExists().Exec(ctx)
 	return New(db), err
 }

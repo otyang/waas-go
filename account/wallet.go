@@ -9,8 +9,6 @@ import (
 	"github.com/uptrace/bun"
 )
 
-// =get walletandcurrency
-
 func (a *Client) CreateWallet(ctx context.Context, wallet *types.Wallet) (*types.Wallet, error) {
 	foundWallet, err := a.GetWalletByCurrencyCode(ctx, wallet.CurrencyCode, wallet.CustomerID)
 	if err == nil {
@@ -85,4 +83,32 @@ func (a *Client) ListWallets(ctx context.Context, opts types.ListWalletsFilterOp
 
 	err := q.Order("currency_code ASC").Scan(ctx)
 	return wallets, err
+}
+
+func (a *Client) WithTxUpdateWalletAndUpsertEvents(ctx context.Context, wallets []*types.Wallet, otherEvents ...any) error {
+	return a.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
+		for _, wallet := range wallets {
+			if wallet == nil {
+				continue
+			}
+			_, err := a.NewWithTx(tx).UpdateWallet(ctx, wallet)
+			if err != nil {
+				return err
+			}
+		}
+
+		if len(otherEvents) > 0 {
+			for _, entry := range otherEvents {
+				if entry == nil {
+					continue
+				}
+				_, err := tx.NewInsert().Model(entry).On("CONFLICT (id) DO UPDATE").Exec(ctx)
+				if err != nil {
+					return err
+				}
+			}
+		}
+
+		return nil
+	})
 }

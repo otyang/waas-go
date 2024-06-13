@@ -40,6 +40,7 @@ type Transaction struct {
 	Currency       string            `json:"currency" bun:",notnull"`
 	Amount         decimal.Decimal   `json:"amount" bun:"type:decimal(24,8),notnull"`
 	Fee            decimal.Decimal   `json:"fee" bun:"type:decimal(24,8),notnull"`
+	Total          decimal.Decimal   `json:"total" bun:"type:decimal(24,8),notnull"`
 	BalanceAfter   decimal.Decimal   `json:"balanceAfter" bun:"type:decimal(24,8),notnull"`
 	Type           TransactionType   `json:"type" bun:",notnull"`
 	Status         TransactionStatus `json:"status" bun:",notnull"`
@@ -65,7 +66,12 @@ func (t *Transaction) SetCounterpartyID(id string) *Transaction {
 	return t
 }
 
-func (t *Transaction) canBeReversed() error {
+func (t *Transaction) SetReversedAt(time time.Time) *Transaction {
+	t.ReversedAt = &time
+	return t
+}
+
+func (t *Transaction) CanBeReversed() error {
 	if t == nil {
 		return ErrInvalidTransactionObject
 	}
@@ -82,55 +88,25 @@ func (t *Transaction) canBeReversed() error {
 	return nil
 }
 
-func (t *Transaction) Reverse(wallet *Wallet) (*ReverseResponse, error) {
-	if err := t.canBeReversed(); err != nil {
-		return nil, err
-	}
-
-	if t.IsDebit {
-		if err := wallet.CreditBalance(t.Amount, t.Fee); err != nil {
-			return nil, err
-		}
-	} else {
-		if err := wallet.DebitBalance(t.Amount, t.Fee); err != nil {
-			return nil, err
-		}
-	}
-	return NewTransactionForReverseEntry(t.Amount, t.Fee, wallet, t), nil
-}
-
-// Creates a new credit transaction entry.
-func NewTransactionForCreditEntry(wallet *Wallet, amount, fee decimal.Decimal, txnType TransactionType) *Transaction {
-	return &Transaction{
-		ID:             NewTransactionID(),
-		CustomerID:     wallet.CustomerID,
-		WalletID:       wallet.ID,
-		IsDebit:        false,
-		Currency:       wallet.CurrencyCode,
-		Amount:         amount,
-		Fee:            fee,
-		BalanceAfter:   wallet.AvailableBalance,
-		Type:           txnType,
-		Status:         TransactionStatusSuccess,
-		Narration:      nil,
-		CounterpartyID: nil,
-		ReversedAt:     nil,
-		CreatedAt:      time.Now(),
-		UpdatedAt:      time.Now(),
-	}
-}
-
-// Creates a new debit transaction entry.
-func NewTransactionForDebitEntry(wallet *Wallet, amount, fee decimal.Decimal, txnType TransactionType, txnStatus TransactionStatus,
+// New transaction
+func NewTransaction(
+	isCredit bool,
+	wallet *Wallet,
+	amount decimal.Decimal,
+	fee decimal.Decimal,
+	totalAmount decimal.Decimal,
+	txnType TransactionType,
+	txnStatus TransactionStatus,
 ) *Transaction {
 	return &Transaction{
 		ID:             NewTransactionID(),
 		CustomerID:     wallet.CustomerID,
 		WalletID:       wallet.ID,
+		IsDebit:        !isCredit,
 		Currency:       wallet.CurrencyCode,
-		IsDebit:        true,
 		Amount:         amount,
 		Fee:            fee,
+		Total:          totalAmount,
 		BalanceAfter:   wallet.AvailableBalance,
 		Type:           txnType,
 		Status:         txnStatus,
@@ -140,43 +116,4 @@ func NewTransactionForDebitEntry(wallet *Wallet, amount, fee decimal.Decimal, tx
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
 	}
-}
-
-// Creates a new transaction for a transfer.
-func NewTransactionForTransfer(fromWallet, toWallet *Wallet, amount, fee decimal.Decimal) (fromTxEntry, toTxEntry *Transaction) {
-	// Since transfers are internal and always successful, set the status to success.
-	de := NewTransactionForDebitEntry(fromWallet, amount, fee, TransactionTypeTransfer, TransactionStatusSuccess)
-	ce := NewTransactionForCreditEntry(toWallet, amount, fee, TransactionTypeTransfer)
-
-	de.SetCounterpartyID(ce.ID)
-	ce.SetCounterpartyID(de.ID)
-
-	return de, ce
-}
-
-func NewTransactionForSwap(fromWallet, toWallet *Wallet, debitAmount, creditAmount, fee decimal.Decimal) (fromTx, toTx *Transaction) {
-	de := NewTransactionForDebitEntry(fromWallet, debitAmount, fee, TransactionTypeSwap, TransactionStatusSuccess)
-	ce := NewTransactionForCreditEntry(toWallet, creditAmount, decimal.Zero, TransactionTypeSwap)
-
-	de.SetCounterpartyID(ce.ID)
-	ce.SetCounterpartyID(de.ID)
-
-	return de, ce
-}
-
-func NewTransactionForReverseEntry(amount, fee decimal.Decimal, wallet *Wallet, oldTX *Transaction) *ReverseResponse {
-	var newTX *Transaction
-
-	if oldTX.IsDebit {
-		newTX = NewTransactionForCreditEntry(wallet, amount, fee, oldTX.Type)
-	} else {
-		newTX = NewTransactionForDebitEntry(wallet, amount, fee, oldTX.Type, TransactionStatusSuccess)
-	}
-
-	oldTX.SetCounterpartyID(newTX.ID)
-	newTX.SetCounterpartyID(oldTX.ID)
-	t := time.Now()
-	oldTX.ReversedAt = &t
-
-	return &ReverseResponse{OldTx: oldTX, NewTx: newTX, Wallet: wallet}
 }
