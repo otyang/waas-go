@@ -2,6 +2,8 @@ package swap
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/otyang/waas-go/types"
@@ -9,31 +11,34 @@ import (
 	"github.com/uptrace/bun"
 )
 
+const (
+	TransactionTypeSwap types.TransactionType = "SWAP"
+)
+
 type Swap struct {
-	ID                  string                  `json:"id" bun:"id,pk"`
-	CustomerID          string                  `json:"customerId" bun:",notnull"`
-	SourceWalletID      string                  `json:"sourceWalletId" bun:",notnull"`
-	DestinationWalletID string                  `json:"destinationWalletId" bun:",notnull"`
-	FromCurrencyCode    string                  `json:"fromCurrency" bun:",notnull"`
-	ToCurrencyCode      string                  `json:"toCurrency" bun:",notnull"`
-	FromAmount          decimal.Decimal         `json:"fromAmount" bun:",notnull"`
-	FromFee             decimal.Decimal         `json:"toFee" bun:",notnull"`
-	ToAmount            decimal.Decimal         `json:"toAmount" bun:",notnull"`
-	Status              types.TransactionStatus `json:"status" bun:",notnull"`
-	CreatedAt           time.Time               `json:"createdAt" bun:",notnull"`
-	UpdatedAt           time.Time               `json:"updatedAt" bun:",notnull"`
+	ID                      string                  `json:"id" bun:"id,pk"`
+	CustomerID              string                  `json:"customerId" bun:",notnull"`
+	SourceWalletID          string                  `json:"sourceWalletId" bun:",notnull"`
+	SourceCurrencyCode      string                  `json:"sourceCurrency" bun:",notnull"`
+	FromAmount              decimal.Decimal         `json:"fromAmount" bun:",notnull"`
+	FromFee                 decimal.Decimal         `json:"toFee" bun:",notnull"`
+	DestinationCurrencyCode string                  `json:"destinationCurrency" bun:",notnull"`
+	DestinationWalletID     string                  `json:"destinationWalletId" bun:",notnull"`
+	ToAmount                decimal.Decimal         `json:"toAmount" bun:",notnull"`
+	Status                  types.TransactionStatus `json:"status" bun:",notnull"`
+	CreatedAt               time.Time               `json:"createdAt" bun:",notnull"`
+	UpdatedAt               time.Time               `json:"updatedAt" bun:",notnull"`
 }
 
 type ListSwapParams struct {
-	ID               string                  `json:"id"`
-	CustomerID       string                  `json:"customerId"`
-	FromCurrencyCode string                  `json:"fromCurrency"`
-	ToCurrencyCode   string                  `json:"toCurrency"`
-	StartAmountRange decimal.Decimal         `json:"startAmountRange"`
-	EndAmountRange   decimal.Decimal         `json:"endAmountRange"`
-	Status           types.TransactionStatus `json:"status"`
-	StartDate        time.Time               `json:"createdAt"`
-	EndDate          time.Time               `json:"updatedAt"`
+	CustomerID              string                  `json:"customerId"`
+	SourceCurrencyCode      string                  `json:"sourceCurrency"`
+	DestinationCurrencyCode string                  `json:"destinationCurrency"`
+	StartAmountRange        decimal.Decimal         `json:"startAmountRange"`
+	EndAmountRange          decimal.Decimal         `json:"endAmountRange"`
+	Status                  types.TransactionStatus `json:"status"`
+	StartDate               time.Time               `json:"createdAt"`
+	EndDate                 time.Time               `json:"updatedAt"`
 }
 
 func NewWithMigration(ctx context.Context, db *bun.DB) (*Client, error) {
@@ -41,20 +46,35 @@ func NewWithMigration(ctx context.Context, db *bun.DB) (*Client, error) {
 	return New(db), err
 }
 
-func (t *Swap) ToTransaction(fromWallet, toWallet *types.Wallet, debitAmount, creditAmount, fee decimal.Decimal,
-) (fromTx, toTx *types.Transaction) {
-	// Since swaps are internal and always successful, set the status to success.
-	de := types.NewTransaction(
-		false, fromWallet, debitAmount, fee, debitAmount.Add(fee),
-		types.TransactionTypeSwap, types.TransactionStatusSuccess,
-	)
-	ce := types.NewTransaction(
-		true, toWallet, creditAmount, decimal.Zero, creditAmount.Add(decimal.Zero),
-		types.TransactionTypeSwap, types.TransactionStatusSuccess,
-	)
+func (t *Swap) ToTransaction(fromWallet, toWallet *types.Wallet) (fromTx, toTx *types.Transaction) {
+	de := types.NewTransactionSummary(types.TxnSummaryParams{
+		IsDebit:           true,
+		Wallet:            fromWallet,
+		Amount:            t.FromAmount,
+		Fee:               t.FromFee,
+		TotalAmount:       t.FromAmount.Add(t.FromFee),
+		TransactionType:   TransactionTypeSwap,
+		TransactionStatus: types.TransactionStatusSuccess,
+		Narration:         generateSwapNarration(t.SourceCurrencyCode, t.DestinationCurrencyCode),
+	})
 
-	de.SetCounterpartyID(ce.ID)
-	ce.SetCounterpartyID(de.ID)
+	ce := types.NewTransactionSummary(types.TxnSummaryParams{
+		IsDebit:           false,
+		Wallet:            toWallet,
+		Amount:            t.ToAmount,
+		Fee:               decimal.Zero,
+		TotalAmount:       t.ToAmount,
+		TransactionType:   TransactionTypeSwap,
+		TransactionStatus: types.TransactionStatusSuccess,
+		Narration:         generateSwapNarration(t.SourceCurrencyCode, t.DestinationCurrencyCode),
+	})
+
+	de.SetCounterpartyID(t.ID, false)
+	ce.SetCounterpartyID(t.ID, false)
 
 	return de, ce
+}
+
+func generateSwapNarration(fromCurrency, toCurrency string) string {
+	return fmt.Sprintf("%s - %s", strings.ToLower(fromCurrency), strings.ToLower(toCurrency))
 }

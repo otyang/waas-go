@@ -9,7 +9,7 @@ import (
 	"github.com/uptrace/bun"
 )
 
-func (a *Client) CreateWallet(ctx context.Context, wallet *types.Wallet) (*types.Wallet, error) {
+func (a *Client) Create(ctx context.Context, wallet *types.Wallet) (*types.Wallet, error) {
 	foundWallet, err := a.GetWalletByCurrencyCode(ctx, wallet.CurrencyCode, wallet.CustomerID)
 	if err == nil {
 		return foundWallet, nil
@@ -22,8 +22,8 @@ func (a *Client) CreateWallet(ctx context.Context, wallet *types.Wallet) (*types
 	return nil, err
 }
 
-func (a *Client) CreateWalletSimplified(ctx context.Context, customerID, currencyCode string) (*types.Wallet, error) {
-	return a.CreateWallet(ctx, types.NewWallet(customerID, currencyCode))
+func (a *Client) CreateSimplified(ctx context.Context, customerID, currencyCode string) (*types.Wallet, error) {
+	return a.Create(ctx, types.NewWallet(customerID, currencyCode))
 }
 
 func (a *Client) UpdateWallet(ctx context.Context, wallet *types.Wallet) (*types.Wallet, error) {
@@ -58,7 +58,7 @@ func (a *Client) GetWalletByCurrencyCode(ctx context.Context, currencyCode, cust
 	return &wallet, err
 }
 
-func (a *Client) ListWallets(ctx context.Context, opts types.ListWalletsFilterOpts) ([]types.Wallet, error) {
+func (a *Client) ListWallets(ctx context.Context, opts ListWalletsFilterOpts) ([]types.Wallet, error) {
 	var wallets []types.Wallet
 
 	q := a.db.NewSelect().Model(&wallets)

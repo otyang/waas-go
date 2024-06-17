@@ -160,11 +160,11 @@ func TestFormatAmountCredit(t *testing.T) {
 
 func TestGetNarrationWithNarration(t *testing.T) {
 	tx := &types.Transaction{
-		Type:      types.TransactionTypeSwap,
+		Type:      types.TransactionType("swap"),
 		Narration: toPointer("Some narration"),
 	}
 
-	expectedNarration := string(types.TransactionTypeSwap) + " " + "Some narration"
+	expectedNarration := string(tx.Type) + " " + "Some narration"
 	actualNarration := getNarration(tx)
 
 	assert.True(t, strings.EqualFold(expectedNarration, actualNarration))
@@ -172,10 +172,10 @@ func TestGetNarrationWithNarration(t *testing.T) {
 
 func TestGetNarrationWithoutNarration(t *testing.T) {
 	tx := &types.Transaction{
-		Type: types.TransactionTypeWithdrawal,
+		Type: types.TransactionType("withdrawal"),
 	}
 
-	expectedNarration := string(types.TransactionTypeWithdrawal) + " "
+	expectedNarration := string(tx.Type) + " "
 	actualNarration := getNarration(tx)
 
 	assert.True(t, strings.EqualFold(expectedNarration, actualNarration))

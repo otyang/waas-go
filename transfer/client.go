@@ -22,15 +22,15 @@ func (a *Client) NewWithTx(tx bun.Tx) *Client {
 	return &Client{db: tx}
 }
 
-func (a *Client) Get(ctx context.Context, transferID string) (*Transfer, error) {
-	transferObj := Transfer{ID: transferID}
+func (a *Client) Find(ctx context.Context, txID string) (*Transfer, error) {
+	transferObj := Transfer{ID: txID}
 	err := a.db.NewSelect().Model(&transferObj).WherePK().Limit(1).Scan(ctx)
 	return &transferObj, err
 }
 
 func (a *Client) Update(ctx context.Context, trf *Transfer) (*Transfer, error) {
 	trf.UpdatedAt = time.Now()
-	_, err := a.db.NewUpdate().Model(&trf).WherePK().Exec(ctx)
+	_, err := a.db.NewUpdate().Model(trf).WherePK().Exec(ctx)
 	return trf, err
 }
 
@@ -38,10 +38,6 @@ func (a *Client) List(ctx context.Context, opts ListTransferParams) ([]Transfer,
 	var trsfs []Transfer
 
 	q := a.db.NewSelect().Model(&trsfs)
-
-	if opts.ID != "" {
-		q.Where("id = ?", opts.ID)
-	}
 
 	if opts.CustomerID != "" {
 		q.Where("customer_id = ?", opts.CustomerID)
@@ -64,7 +60,7 @@ func (a *Client) List(ctx context.Context, opts ListTransferParams) ([]Transfer,
 	}
 
 	if opts.Narration != "" {
-		q.Where("lower(narration) = ?", opts.Narration)
+		q.Where("lower(narration) LIKE ?", "%"+opts.Narration+"%")
 	}
 
 	if opts.Status != "" {
@@ -100,7 +96,7 @@ func (a *Client) Create(ctx context.Context, opts *Transfer) (*Transfer, error) 
 		return nil, err
 	}
 
-	fromTrsn, toTrsn := opts.ToTransaction(fromWallet, toWallet, opts.Amount, opts.Fee)
+	fromTrsn, toTrsn := opts.ToTransaction(fromWallet, toWallet)
 
 	if err = a.account.WithTxUpdateWalletAndUpsertEvents(
 		ctx,

@@ -7,16 +7,10 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-type TransactionType string
-
-const (
-	TransactionTypeSwap       TransactionType = "SWAP"
-	TransactionTypeTransfer   TransactionType = "TRANSFER"
-	TransactionTypeDeposit    TransactionType = "DEPOSIT"
-	TransactionTypeWithdrawal TransactionType = "WITHDRAWAL"
+type (
+	TransactionType   string
+	TransactionStatus string
 )
-
-type TransactionStatus string
 
 const (
 	TransactionStatusNew     TransactionStatus = "NEW"
@@ -51,69 +45,59 @@ type Transaction struct {
 	UpdatedAt      time.Time         `json:"updatedAt" bun:",notnull"`
 }
 
-func (t *Transaction) SetNarration(narration string) *Transaction {
-	if trimmedNarration := strings.TrimSpace(narration); trimmedNarration != "" {
-		t.Narration = &trimmedNarration
-	}
-	return t
-}
-
 // SetCounterpartyID sets the counterparty ID of the transaction.
-func (t *Transaction) SetCounterpartyID(id string) *Transaction {
+func (t *Transaction) SetCounterpartyID(id string, reversed bool) *Transaction {
 	if trimmedID := strings.TrimSpace(id); trimmedID != "" {
 		t.CounterpartyID = &trimmedID
+
+		if reversed {
+			_time := time.Now()
+			t.ReversedAt = &_time
+		}
 	}
 	return t
 }
 
-func (t *Transaction) SetReversedAt(time time.Time) *Transaction {
-	t.ReversedAt = &time
-	return t
-}
-
-func (t *Transaction) CanBeReversed() error {
-	if t == nil {
-		return ErrInvalidTransactionObject
-	}
-
-	if t.ReversedAt != nil {
-		return ErrTransactionAlreadyReversed
-	}
-
-	// only withdraw or debit transaction can be reversed
-	if t.Type != TransactionTypeWithdrawal {
-		return ErrTransactionUnsupportedReversalType
-	}
-
-	return nil
+type TxnSummaryParams struct {
+	TransactionID     string
+	IsDebit           bool
+	Wallet            *Wallet
+	Amount            decimal.Decimal
+	Fee               decimal.Decimal
+	TotalAmount       decimal.Decimal
+	TransactionType   TransactionType
+	TransactionStatus TransactionStatus
+	Narration         string
 }
 
 // New transaction
-func NewTransaction(
-	isCredit bool,
-	wallet *Wallet,
-	amount decimal.Decimal,
-	fee decimal.Decimal,
-	totalAmount decimal.Decimal,
-	txnType TransactionType,
-	txnStatus TransactionStatus,
-) *Transaction {
-	return &Transaction{
-		ID:             NewTransactionID(),
-		CustomerID:     wallet.CustomerID,
-		WalletID:       wallet.ID,
-		IsDebit:        !isCredit,
-		Currency:       wallet.CurrencyCode,
-		Amount:         amount,
-		Fee:            fee,
-		Total:          totalAmount,
-		BalanceAfter:   wallet.AvailableBalance,
-		Type:           txnType,
-		Status:         txnStatus,
+func NewTransactionSummary(params TxnSummaryParams) *Transaction {
+	tx := &Transaction{
+		ID:             params.TransactionID,
+		CustomerID:     params.Wallet.CustomerID,
+		WalletID:       params.Wallet.ID,
+		IsDebit:        params.IsDebit,
+		Currency:       params.Wallet.CurrencyCode,
+		Amount:         params.Amount,
+		Fee:            params.Fee,
+		Total:          params.TotalAmount,
+		BalanceAfter:   params.Wallet.TotalBalance(),
+		Type:           params.TransactionType,
+		Status:         params.TransactionStatus,
 		Narration:      nil,
 		CounterpartyID: nil,
 		ReversedAt:     nil,
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
 	}
+
+	if strings.TrimSpace(tx.ID) == "" {
+		tx.ID = NewTransactionID()
+	}
+
+	if strings.TrimSpace(params.Narration) != "" {
+		tx.Narration = &params.Narration
+	}
+
+	return tx
 }

@@ -9,6 +9,8 @@ import (
 	"github.com/uptrace/bun"
 )
 
+const TransactionTypeTransfer types.TransactionType = "TRANSFER"
+
 type Transfer struct {
 	ID                  string                  `json:"id" bun:"id,pk"`
 	CustomerID          string                  `json:"customerId" bun:",notnull"`
@@ -18,15 +20,14 @@ type Transfer struct {
 	Amount              decimal.Decimal         `json:"amount" bun:"type:decimal(24,8),notnull"`
 	Fee                 decimal.Decimal         `json:"fee" bun:"type:decimal(24,8),notnull"`
 	Total               decimal.Decimal         `json:"total" bun:"type:decimal(24,8),notnull"`
-	Narration           string                  `json:"narration" bun:",notnull"`
 	Status              types.TransactionStatus `json:"status" bun:",notnull"`
 	InitiatorID         string                  `json:"initiatorId" bun:",notnull"`
+	Narration           string                  `json:"narration" bun:",notnull"`
 	CreatedAt           time.Time               `json:"createdAt" bun:",notnull"`
 	UpdatedAt           time.Time               `json:"updatedAt" bun:",notnull"`
 }
 
 type ListTransferParams struct {
-	ID                  string                  `json:"id" bun:"id,pk"`
 	CustomerID          string                  `json:"customerId"`
 	SourceWalletID      string                  `json:"sourceWalletId"`
 	DestinationWalletID string                  `json:"destinationWalletId"`
@@ -49,19 +50,33 @@ func NewWithMigration(ctx context.Context, db *bun.DB) (*Client, error) {
 	return New(db), err
 }
 
-func (t *Transfer) ToTransaction(fromWallet, toWallet *types.Wallet, amount, fee decimal.Decimal) (fromTx, toTx *types.Transaction) {
+func (t *Transfer) ToTransaction(fromWallet, toWallet *types.Wallet) (fromTx, toTx *types.Transaction) {
 	// Since transfers are internal and always successful, set the status to success.
 
-	de := types.NewTransaction(
-		false, fromWallet, amount, fee, amount.Add(fee), types.TransactionTypeTransfer, types.TransactionStatusSuccess,
-	)
+	de := types.NewTransactionSummary(types.TxnSummaryParams{
+		IsDebit:           true,
+		Wallet:            fromWallet,
+		Amount:            t.Amount,
+		Fee:               t.Fee,
+		TotalAmount:       t.Amount.Add(t.Fee),
+		TransactionType:   TransactionTypeTransfer,
+		TransactionStatus: types.TransactionStatusSuccess,
+		Narration:         t.Narration,
+	})
 
-	ce := types.NewTransaction(
-		true, toWallet, amount, fee, amount.Add(decimal.Zero), types.TransactionTypeTransfer, types.TransactionStatusSuccess,
-	)
+	ce := types.NewTransactionSummary(types.TxnSummaryParams{
+		IsDebit:           false,
+		Wallet:            toWallet,
+		Amount:            t.Amount,
+		Fee:               t.Fee,
+		TotalAmount:       t.Amount.Add(decimal.Zero),
+		TransactionType:   TransactionTypeTransfer,
+		TransactionStatus: types.TransactionStatusSuccess,
+		Narration:         t.Narration,
+	})
 
-	de.SetCounterpartyID(ce.ID)
-	ce.SetCounterpartyID(de.ID)
+	de.SetCounterpartyID(t.ID, false)
+	ce.SetCounterpartyID(t.ID, false)
 
 	return de, ce
 }
