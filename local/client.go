@@ -23,7 +23,7 @@ func (a *Client) NewWithTx(tx bun.Tx) *Client {
 }
 
 func (a *Client) Create(ctx context.Context, opts *LocalPayment) (*LocalPayment, error) {
-	wallet, err := a.account.GetWalletByID(ctx, opts.WalletID)
+	wallet, err := a.account.FindWalletByID(ctx, opts.WalletID)
 	if err != nil {
 		return nil, err
 	}

@@ -81,12 +81,12 @@ func (a *Client) List(ctx context.Context, opts ListTransferParams) ([]Transfer,
 
 func (a *Client) Create(ctx context.Context, opts *Transfer) (*Transfer, error) {
 
-	fromWallet, err := a.account.GetWalletByID(ctx, opts.SourceWalletID)
+	fromWallet, err := a.account.FindWalletByID(ctx, opts.SourceWalletID)
 	if err != nil {
 		return nil, err
 	}
 
-	toWallet, err := a.account.GetWalletByID(ctx, opts.DestinationWalletID)
+	toWallet, err := a.account.FindWalletByID(ctx, opts.DestinationWalletID)
 	if err != nil {
 		return nil, err
 	}

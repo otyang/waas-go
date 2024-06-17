@@ -60,7 +60,6 @@ func NewWithMigration(ctx context.Context, db *bun.DB) (*Client, error) {
 }
 
 func (t *LocalPayment) ToTransaction(wallet *types.Wallet) *types.Transaction {
-
 	return types.NewTransactionSummary(types.TxnSummaryParams{
 		TransactionID:     t.ID,
 		IsDebit:           !t.IsDeposit,

@@ -8,6 +8,32 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// func TestClient_WithTxBulkUpdateWalletAndInsertTransaction(t *testing.T) {
+// 	t.Parallel()
+
+// 	acc := &Client{
+// 		db: TestDB,
+// 	}
+
+// 	wallet, err := acc.CreateWallet(context.Background(), createTestRandomWallet("cust_800", "ngn"))
+// 	assert.NoError(t, err)
+
+// 	got, err := acc.Credit(context.Background(), types.CreditWalletOpts{
+// 		WalletID:  wallet.ID,
+// 		Amount:    decimal.NewFromFloat(50),
+// 		Fee:       decimal.Zero,
+// 		Type:      types.TransactionTypeDeposit,
+// 		Narration: "deposit of funds",
+// 	})
+// 	assert.NoError(t, err)
+
+// 	err = acc.WithTxBulkUpdateWalletAndInsertTransaction(
+// 		context.Background(), []*types.Wallet{got.Wallet}, []*types.Transaction{got.Transaction},
+// 	)
+// 	assert.Error(t, err)
+// 	assert.True(t, strings.Contains(err.Error(), "constraint"))
+// }
+
 func TestAccount_Wallets_and_all_its_assosiated_functions(t *testing.T) {
 	t.Parallel()
 
@@ -17,12 +43,12 @@ func TestAccount_Wallets_and_all_its_assosiated_functions(t *testing.T) {
 
 	w := createTestRandomWallet("cust_123", "ngn")
 
-	got, err := acc.Create(context.Background(), w)
+	got, err := acc.CreateWallet(context.Background(), w)
 	assert.NoError(t, err)
 	assert.Equal(t, w, got)
 
 	t.Run("Re-Create same existing wallet. It should ignore", func(t *testing.T) {
-		got, err = acc.Create(context.Background(), got)
+		got, err = acc.CreateWallet(context.Background(), got)
 		assert.NoError(t, err)
 		assert.Equal(t, w.CurrencyCode, got.CurrencyCode) //
 		assert.Equal(t, w.CustomerID, got.CustomerID)     //
@@ -30,14 +56,14 @@ func TestAccount_Wallets_and_all_its_assosiated_functions(t *testing.T) {
 	})
 
 	t.Run("Get wallet", func(t *testing.T) {
-		got, err = acc.GetWalletByID(context.Background(), w.ID)
+		got, err = acc.FindWalletByID(context.Background(), w.ID)
 		assert.NoError(t, err)
 		assert.Equal(t, got.ID, got.ID)
 		assert.Equal(t, got.VersionId, got.VersionId)
 	})
 
 	t.Run("Get wallet by Id & CurrencyCode", func(t *testing.T) {
-		got, err = acc.GetWalletByCurrencyCode(context.Background(), "ngn", "cust_123")
+		got, err = acc.FindWalletByCurrencyCode(context.Background(), "ngn", "cust_123")
 		assert.NoError(t, err)
 		assert.Equal(t, got.VersionId, got.VersionId)
 	})
@@ -52,7 +78,7 @@ func TestAccount_Wallets_and_all_its_assosiated_functions(t *testing.T) {
 
 	// list wallets test. lets add more
 	w1 := createTestRandomWallet("cust_123", "usd")
-	_, err = acc.Create(context.Background(), w1)
+	_, err = acc.CreateWallet(context.Background(), w1)
 	assert.NoError(t, err)
 
 	t.Run("list without filters", func(t *testing.T) {

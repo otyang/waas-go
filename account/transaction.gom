@@ -16,7 +16,7 @@ func (a *Client) CreateTransaction(ctx context.Context, transaction *types.Trans
 	return transaction, err
 }
 
-func (a *Client) GetTransaction(ctx context.Context, transactionID string) (*types.Transaction, error) {
+func (a *Client) FindTransaction(ctx context.Context, transactionID string) (*types.Transaction, error) {
 	transaction := types.Transaction{ID: transactionID}
 	err := a.db.NewSelect().Model(&transaction).WherePK().Limit(1).Scan(ctx)
 	return &transaction, err

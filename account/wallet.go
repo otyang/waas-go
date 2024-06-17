@@ -9,8 +9,8 @@ import (
 	"github.com/uptrace/bun"
 )
 
-func (a *Client) Create(ctx context.Context, wallet *types.Wallet) (*types.Wallet, error) {
-	foundWallet, err := a.GetWalletByCurrencyCode(ctx, wallet.CurrencyCode, wallet.CustomerID)
+func (a *Client) CreateWallet(ctx context.Context, wallet *types.Wallet) (*types.Wallet, error) {
+	foundWallet, err := a.FindWalletByCurrencyCode(ctx, wallet.CurrencyCode, wallet.CustomerID)
 	if err == nil {
 		return foundWallet, nil
 	}
@@ -23,7 +23,7 @@ func (a *Client) Create(ctx context.Context, wallet *types.Wallet) (*types.Walle
 }
 
 func (a *Client) CreateSimplified(ctx context.Context, customerID, currencyCode string) (*types.Wallet, error) {
-	return a.Create(ctx, types.NewWallet(customerID, currencyCode))
+	return a.CreateWallet(ctx, types.NewWallet(customerID, currencyCode))
 }
 
 func (a *Client) UpdateWallet(ctx context.Context, wallet *types.Wallet) (*types.Wallet, error) {
@@ -38,7 +38,7 @@ func (a *Client) UpdateWallet(ctx context.Context, wallet *types.Wallet) (*types
 	return wallet, err
 }
 
-func (a *Client) GetWalletByID(ctx context.Context, walletID string) (*types.Wallet, error) {
+func (a *Client) FindWalletByID(ctx context.Context, walletID string) (*types.Wallet, error) {
 	wallet := types.Wallet{ID: walletID}
 	err := a.db.
 		NewSelect().
@@ -47,7 +47,7 @@ func (a *Client) GetWalletByID(ctx context.Context, walletID string) (*types.Wal
 	return &wallet, err
 }
 
-func (a *Client) GetWalletByCurrencyCode(ctx context.Context, currencyCode, customerID string) (*types.Wallet, error) {
+func (a *Client) FindWalletByCurrencyCode(ctx context.Context, currencyCode, customerID string) (*types.Wallet, error) {
 	var wallet types.Wallet
 
 	err := a.db.NewSelect().

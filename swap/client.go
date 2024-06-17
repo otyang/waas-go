@@ -22,7 +22,7 @@ func (a *Client) NewWithTx(tx bun.Tx) *Client {
 	return &Client{db: tx}
 }
 
-func (a *Client) Get(ctx context.Context, swapID string) (*Swap, error) {
+func (a *Client) Find(ctx context.Context, swapID string) (*Swap, error) {
 	swapOBJ := Swap{ID: swapID}
 	err := a.db.NewSelect().Model(&swapOBJ).WherePK().Limit(1).Scan(ctx)
 	return &swapOBJ, err
@@ -77,12 +77,12 @@ func (a *Client) List(ctx context.Context, opts ListSwapParams) ([]Swap, error) 
 
 func (a *Client) Create(ctx context.Context, opts *Swap) (*Swap, error) {
 
-	sourceWallet, err := a.account.GetWalletByCurrencyCode(ctx, opts.SourceCurrencyCode, opts.CustomerID)
+	sourceWallet, err := a.account.FindWalletByCurrencyCode(ctx, opts.SourceCurrencyCode, opts.CustomerID)
 	if err != nil {
 		return nil, err
 	}
 
-	destinationWallet, err := a.account.GetWalletByCurrencyCode(ctx, opts.DestinationCurrencyCode, opts.CustomerID)
+	destinationWallet, err := a.account.FindWalletByCurrencyCode(ctx, opts.DestinationCurrencyCode, opts.CustomerID)
 	if err != nil {
 		return nil, err
 	}

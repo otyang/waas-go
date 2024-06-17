@@ -36,8 +36,8 @@ func TestClient_Transaction_and_all_its_assosiated_functions(t *testing.T) {
 	_, err := a.CreateTransaction(context.Background(), &txn)
 	assert.NoError(t, err)
 
-	t.Run("get transaction", func(t *testing.T) {
-		got, err := a.GetTransaction(context.Background(), txn.ID)
+	t.Run("find transaction", func(t *testing.T) {
+		got, err := a.FindTransaction(context.Background(), txn.ID)
 		assert.NoError(t, err)
 		assert.Equal(t, txn.ID, got.ID)
 	})
