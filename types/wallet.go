@@ -15,6 +15,7 @@ var (
 	ErrWalletInvalidAmount            = NewWaasError("invalid amount: cannot be zero or negative")
 	ErrWalletInvalidTransferSameOwner = NewWaasError("cannot transfer funds to the same owner or wallet")
 	ErrWalletSameCurrencySwap         = NewWaasError("cannot swap between same currency")
+	ErrWalletDifferentCurrency        = NewWaasError("cannot transfer between different currency")
 	ErrWalletSwapSameOwnerRequired    = NewWaasError("cannot swap between diffetent customers")
 	ErrWalletClosed                   = NewWaasError("cannot operate on a closed wallet")
 )
@@ -168,6 +169,11 @@ func (fromWallet *Wallet) TransferTo(toWallet *Wallet, amount, fee decimal.Decim
 	// ensure we not transferring to same wallet
 	if fromWallet.ID == toWallet.ID {
 		return ErrWalletInvalidTransferSameOwner
+	}
+
+	// Check if currencies are different
+	if fromWallet.CurrencyCode != toWallet.CurrencyCode {
+		return ErrWalletDifferentCurrency
 	}
 
 	if err := fromWallet.CanBeDebited(); err != nil {

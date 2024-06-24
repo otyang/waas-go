@@ -62,6 +62,8 @@ func (t *Transfer) ToTransaction(fromWallet, toWallet *types.Wallet) (fromTx, to
 		TransactionType:   TransactionTypeTransfer,
 		TransactionStatus: types.TransactionStatusSuccess,
 		Narration:         t.Narration,
+		CreatedAt:         t.CreatedAt,
+		UpdatedAt:         t.UpdatedAt,
 	})
 
 	ce := types.NewTransactionSummary(types.TxnSummaryParams{
@@ -73,10 +75,12 @@ func (t *Transfer) ToTransaction(fromWallet, toWallet *types.Wallet) (fromTx, to
 		TransactionType:   TransactionTypeTransfer,
 		TransactionStatus: types.TransactionStatusSuccess,
 		Narration:         t.Narration,
+		CreatedAt:         t.CreatedAt,
+		UpdatedAt:         t.UpdatedAt,
 	})
 
-	de.SetCounterpartyID(t.ID, false)
-	ce.SetCounterpartyID(t.ID, false)
+	de.SetServiceTxnID(t.ID, false)
+	ce.SetServiceTxnID(t.ID, false)
 
 	return de, ce
 }

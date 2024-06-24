@@ -28,7 +28,6 @@ func (a *Client) UpdateTransaction(ctx context.Context, transaction *types.Trans
 	return transaction, err
 }
 
-
 func (a *Client) ListTransactions(ctx context.Context, opts types.ListTransactionsFilterOpts) ([]types.Transaction, string, error) {
 	var results []types.Transaction
 
