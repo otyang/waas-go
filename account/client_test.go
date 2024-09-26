@@ -3,8 +3,6 @@ package account
 import (
 	"context"
 	"log"
-	"os"
-	"testing"
 
 	dbstore "github.com/otyang/go-dbstore"
 	"github.com/otyang/waas-go/types"
@@ -46,11 +44,4 @@ func createTestRandomWallet(customerID, currencyCode string) *types.Wallet {
 
 func toPointer[T any](v T) *T {
 	return &v
-}
-
-func TestMain(m *testing.M) {
-	TestDB = setUp()
-	defer tearDown(TestDB)
-	exitVal := m.Run()
-	os.Exit(exitVal)
 }

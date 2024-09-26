@@ -111,3 +111,25 @@ func NewTransactionSummary(params TxnSummaryParams) *Transaction {
 
 	return tx
 }
+
+// Creates a new credit transaction entry.
+func NewTransactionForCreditEntry(wallet *Wallet, amount, fee decimal.Decimal, txnType TransactionType) *Transaction {
+	return &Transaction{
+		ID:           NewTransactionID(),
+		CustomerID:   wallet.CustomerID,
+		WalletID:     wallet.ID,
+		IsDebit:      false,
+		Currency:     wallet.CurrencyCode,
+		Amount:       amount,
+		Fee:          fee,
+		Total:        amount.Add(fee),
+		BalanceAfter: wallet.AvailableBalance,
+		Type:         txnType,
+		Status:       TransactionStatusSuccess,
+		Narration:    nil,
+		ServiceTxnID: nil,
+		ReversedAt:   nil,
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
+	}
+}
