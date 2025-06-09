@@ -6,26 +6,9 @@ import (
 	"time"
 
 	"github.com/otyang/waas-go/types"
-	"github.com/shopspring/decimal"
 )
 
 type (
-	CreditWalletOption struct {
-		WalletID        string
-		Amount          decimal.Decimal
-		Fee             decimal.Decimal
-		PendTransaction bool
-		Transaction     *types.Transaction
-	}
-
-	DebitWalletOption struct {
-		WalletID        string
-		Amount          decimal.Decimal
-		Fee             decimal.Decimal
-		PendTransaction bool
-		Transaction     *types.Transaction
-	}
-
 	CreditOrDebitWalletResponse struct {
 		Wallet      *types.Wallet
 		Transaction *types.Transaction
@@ -64,76 +47,42 @@ func (x *CreditWalletOption) Validate() error {
 	return nil
 }
 
-func (a *Client) CreditWallet(ctx context.Context, opts CreditWalletOption) (*CreditOrDebitWalletResponse, error) {
+func (a *Client) CreditWallet(ctx context.Context, opts types.CreditOrDebitWalletOption) (*CreditOrDebitWalletResponse, error) {
 	wallet, err := a.FindWalletByID(ctx, opts.WalletID)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := opts.Validate(); err != nil {
-		return nil, err
-	}
-
-	err = wallet.CreditBalance(opts.Amount, opts.Fee)
+	t, w, err := types.CreditBalanceWithTxn(wallet, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	transaction := NewTransaction(wallet, opts.Transaction, true)
-
-	err = a.WithTxBulkUpdateWalletAndInsertTransaction(ctx, []*types.Wallet{wallet}, []*types.Transaction{transaction})
+	err = a.WithTxBulkUpdateWalletAndInsertTransaction(ctx, []*types.Wallet{w}, []*types.Transaction{t})
 	if err != nil {
 		return nil, err
 	}
 
-	return &CreditOrDebitWalletResponse{Wallet: wallet, Transaction: transaction}, nil
+	return &CreditOrDebitWalletResponse{Wallet: w, Transaction: t}, nil
 }
 
 // ==============================
 
-func (a *Client) DebitWallet(ctx context.Context, opts CreditWalletOption) (*CreditOrDebitWalletResponse, error) {
+func (a *Client) DebitWallet(ctx context.Context, opts types.CreditOrDebitWalletOption) (*CreditOrDebitWalletResponse, error) {
 	wallet, err := a.FindWalletByID(ctx, opts.WalletID)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := opts.Validate(); err != nil {
-		return nil, err
-	}
-
-	err = wallet.DebitBalance(opts.Amount, opts.Fee)
+	t, w, err := types.DebitBalanceWithTxn(wallet, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	transaction := NewTransaction(wallet, opts.Transaction, false)
-
-	err = a.WithTxBulkUpdateWalletAndInsertTransaction(ctx, []*types.Wallet{wallet}, []*types.Transaction{transaction})
+	err = a.WithTxBulkUpdateWalletAndInsertTransaction(ctx, []*types.Wallet{w}, []*types.Transaction{t})
 	if err != nil {
 		return nil, err
 	}
 
-	return &CreditOrDebitWalletResponse{Wallet: wallet, Transaction: transaction}, nil
-}
-
-// Creates a new credit transaction entry.
-func NewTransaction(wallet *types.Wallet, txn *types.Transaction, isCredit bool) *types.Transaction {
-	return &types.Transaction{
-		ID:           txn.ID,
-		CustomerID:   wallet.CustomerID,
-		WalletID:     wallet.ID,
-		IsDebit:      !isCredit,
-		Currency:     wallet.CurrencyCode,
-		Amount:       txn.Amount,
-		Fee:          txn.Fee,
-		Total:        txn.Total,
-		BalanceAfter: wallet.AvailableBalance,
-		Type:         txn.Type,
-		Status:       txn.Status,
-		Narration:    txn.Narration,
-		ServiceTxnID: txn.ServiceTxnID,
-		ReversedAt:   nil,
-		CreatedAt:    txn.CreatedAt,
-		UpdatedAt:    txn.UpdatedAt,
-	}
+	return &CreditOrDebitWalletResponse{Wallet: w, Transaction: t}, nil
 }

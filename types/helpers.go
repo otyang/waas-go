@@ -1,6 +1,7 @@
 package types
 
 import (
+	"errors"
 	"strings"
 	"time"
 
@@ -20,6 +21,18 @@ type CreditOrDebitWalletOption struct {
 }
 
 func (x *CreditOrDebitWalletOption) Validate() error {
+	if x.TxnCategory == "" {
+		return errors.New("transaction category parameter shouldn't be empty")
+	}
+
+	if x.Narration == nil {
+		return errors.New("transaction narration parameter shouldn't be empty")
+	}
+
+	if x.PendTransaction {
+		x.Status = TransactionStatusPending
+	}
+
 	return nil
 }
 

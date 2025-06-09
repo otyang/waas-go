@@ -1,7 +1,6 @@
 package types
 
 import (
-	"strings"
 	"time"
 
 	gonanoid "github.com/matoous/go-nanoid"
@@ -32,10 +31,10 @@ func GenerateID(prefix string, size int) string {
 }
 
 // makes a slice of strings insensitive
-func ToLowercaseSlice(strs []string) []string {
-	lowercaseStrs := make([]string, len(strs))
-	for i, str := range strs {
-		lowercaseStrs[i] = strings.TrimSpace(strings.ToLower(str))
-	}
-	return lowercaseStrs
-}
+// func ToLowercaseSlice(strs []string) []string {
+// 	lowercaseStrs := make([]string, len(strs))
+// 	for i, str := range strs {
+// 		lowercaseStrs[i] = strings.TrimSpace(strings.ToLower(str))
+// 	}
+// 	return lowercaseStrs
+// }
