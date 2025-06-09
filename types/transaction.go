@@ -39,7 +39,8 @@ type Transaction struct {
 	Category     TransactionCategory `json:"category" bun:",notnull"`
 	Status       TransactionStatus   `json:"status" bun:",notnull"`
 	Narration    *string             `json:"narration"`
-	ServiceTxnID *string             `json:"serviceTxnId" bun:",notnull"`
+	ServiceTxnID *string             `json:"serviceTxnId"`
+	LinkedTxnID  *string             `json:"linkedTxnId"`
 	ReversedAt   *time.Time          `json:"reversedAt"`
 	CreatedAt    time.Time           `json:"createdAt" bun:",notnull"`
 	UpdatedAt    time.Time           `json:"updatedAt" bun:",notnull"`
@@ -49,6 +50,19 @@ type Transaction struct {
 func (t *Transaction) SetServiceTxnID(id string, reversed bool) *Transaction {
 	if trimmedID := strings.TrimSpace(id); trimmedID != "" {
 		t.ServiceTxnID = &trimmedID
+
+		if reversed {
+			_time := time.Now()
+			t.ReversedAt = &_time
+		}
+	}
+	return t
+}
+
+// SetServiceTxnID sets the counterparty ID of the transaction.
+func (t *Transaction) SetLinkedTxnID(id string, reversed bool) *Transaction {
+	if trimmedID := strings.TrimSpace(id); trimmedID != "" {
+		t.LinkedTxnID = &trimmedID
 
 		if reversed {
 			_time := time.Now()

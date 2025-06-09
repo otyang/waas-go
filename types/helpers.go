@@ -11,13 +11,14 @@ import (
 // ==== Helpers
 
 type CreditOrDebitWalletOption struct {
-	Amount                 decimal.Decimal
-	Fee                    decimal.Decimal
-	PendTransaction        bool
-	TxnCategory            TransactionCategory
-	Status                 TransactionStatus
-	Narration              *string `json:"narration"`
-	UseThisAsTransactionID string
+	Amount                         decimal.Decimal
+	Fee                            decimal.Decimal
+	PendTransaction                bool
+	TxnCategory                    TransactionCategory
+	Status                         TransactionStatus
+	Narration                      *string `json:"narration"`
+	OptionalUseThisAsTransactionID string  // if empty it autogenerates new id
+	OptionalLinkedTxnID            string
 }
 
 func (x *CreditOrDebitWalletOption) Validate() error {
@@ -36,47 +37,9 @@ func (x *CreditOrDebitWalletOption) Validate() error {
 	return nil
 }
 
-type SwapWalletOption struct {
-	FromAmount      decimal.Decimal
-	ToAmount        decimal.Decimal
-	Fee             decimal.Decimal
-	PendTransaction bool
-	TxnCategory     TransactionCategory
-	Status          TransactionStatus
-	Narration       *string `json:"narration"`
-}
-
-func (x *SwapWalletOption) Validate() error {
-	return nil
-}
-
-func (x *SwapWalletOption) ToDebitWalletParams() CreditOrDebitWalletOption {
-	return CreditOrDebitWalletOption{
-		Amount:                 x.FromAmount,
-		Fee:                    x.Fee,
-		PendTransaction:        x.PendTransaction,
-		TxnCategory:            x.TxnCategory,
-		Status:                 x.Status,
-		Narration:              x.Narration,
-		UseThisAsTransactionID: NewTransactionID(),
-	}
-}
-
-func (x *SwapWalletOption) ToCreditWalletParams() CreditOrDebitWalletOption {
-	return CreditOrDebitWalletOption{
-		Amount:                 x.ToAmount,
-		Fee:                    decimal.Zero,
-		PendTransaction:        x.PendTransaction,
-		TxnCategory:            x.TxnCategory,
-		Status:                 x.Status,
-		Narration:              x.Narration,
-		UseThisAsTransactionID: NewTransactionID(),
-	}
-}
-
 func newTransactionSummary(wallet *Wallet, opts CreditOrDebitWalletOption, isDebit bool) Transaction {
-	if strings.TrimSpace(opts.UseThisAsTransactionID) != "" {
-		opts.UseThisAsTransactionID = NewTransactionID()
+	if strings.TrimSpace(opts.OptionalUseThisAsTransactionID) != "" {
+		opts.OptionalUseThisAsTransactionID = NewTransactionID()
 	}
 
 	var totalAmount decimal.Decimal
@@ -87,7 +50,7 @@ func newTransactionSummary(wallet *Wallet, opts CreditOrDebitWalletOption, isDeb
 	}
 
 	return Transaction{
-		ID:           opts.UseThisAsTransactionID,
+		ID:           opts.OptionalUseThisAsTransactionID,
 		CustomerID:   wallet.CustomerID,
 		WalletID:     wallet.ID,
 		IsDebit:      isDebit,
@@ -100,6 +63,7 @@ func newTransactionSummary(wallet *Wallet, opts CreditOrDebitWalletOption, isDeb
 		Status:       opts.Status,
 		Narration:    opts.Narration,
 		ServiceTxnID: nil,
+		LinkedTxnID:  &opts.OptionalLinkedTxnID,
 		ReversedAt:   nil,
 		CreatedAt:    time.Now(),
 		UpdatedAt:    time.Now(),
@@ -137,6 +101,44 @@ func CreditBalanceWithTxn(wlt *Wallet, opts CreditOrDebitWalletOption) (*Transac
 	return &tx, wlt, nil
 }
 
+type SwapWalletOption struct {
+	FromAmount      decimal.Decimal
+	ToAmount        decimal.Decimal
+	Fee             decimal.Decimal
+	PendTransaction bool
+	TxnCategory     TransactionCategory
+	Status          TransactionStatus
+	Narration       *string `json:"narration"`
+}
+
+func (x *SwapWalletOption) Validate() error {
+	return nil
+}
+
+func (x *SwapWalletOption) ToDebitWalletParams() CreditOrDebitWalletOption {
+	return CreditOrDebitWalletOption{
+		Amount:                         x.FromAmount,
+		Fee:                            x.Fee,
+		PendTransaction:                x.PendTransaction,
+		TxnCategory:                    x.TxnCategory,
+		Status:                         x.Status,
+		Narration:                      x.Narration,
+		OptionalUseThisAsTransactionID: NewTransactionID(),
+	}
+}
+
+func (x *SwapWalletOption) ToCreditWalletParams() CreditOrDebitWalletOption {
+	return CreditOrDebitWalletOption{
+		Amount:                         x.ToAmount,
+		Fee:                            decimal.Zero,
+		PendTransaction:                x.PendTransaction,
+		TxnCategory:                    x.TxnCategory,
+		Status:                         x.Status,
+		Narration:                      x.Narration,
+		OptionalUseThisAsTransactionID: NewTransactionID(),
+	}
+}
+
 func TransferWithTxn(fromWallet *Wallet, toWallet *Wallet, opts CreditOrDebitWalletOption) (*Transaction, *Transaction, error) {
 	opts.TxnCategory = "transfer"
 
@@ -151,6 +153,9 @@ func TransferWithTxn(fromWallet *Wallet, toWallet *Wallet, opts CreditOrDebitWal
 
 	txF := newTransactionSummary(fromWallet, opts, true) // FromTransaction
 	txT := newTransactionSummary(toWallet, opts, false)  // ToTransaction
+
+	txF.SetLinkedTxnID(txT.ID, false)
+	txT.SetLinkedTxnID(txF.ID, false)
 
 	return &txF, &txT, nil
 }
@@ -169,6 +174,9 @@ func SwapWithTxn(fromWallet *Wallet, toWallet *Wallet, opts SwapWalletOption) (*
 
 	txF := newTransactionSummary(fromWallet, opts.ToDebitWalletParams(), true) // FromTransaction
 	txT := newTransactionSummary(toWallet, opts.ToCreditWalletParams(), false) // ToTransaction
+
+	txF.SetLinkedTxnID(txT.ID, false)
+	txT.SetLinkedTxnID(txF.ID, false)
 
 	return &txF, &txT, nil
 }

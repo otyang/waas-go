@@ -9,7 +9,7 @@ import (
 	"github.com/uptrace/bun"
 )
 
-const TransactionTypeTransfer types.TransactionType = "TRANSFER"
+const TransactionTypeTransfer types.TransactionCategory = "TRANSFER"
 
 type Transfer struct {
 	ID                  string                  `json:"id" bun:"id,pk"`
@@ -50,37 +50,25 @@ func NewWithMigration(ctx context.Context, db *bun.DB) (*Client, error) {
 	return New(db), err
 }
 
-func (t *Transfer) ToTransaction(fromWallet, toWallet *types.Wallet) (fromTx, toTx *types.Transaction) {
-	// Since transfers are internal and always successful, set the status to success.
+func (t *Transfer) ToTransaction(fromWalletID, toWalletID *types.Wallet) (fromTx, toTx *types.Transaction) {
 
-	de := types.NewTransactionSummary(types.TxnSummaryParams{
-		IsDebit:           true,
-		Wallet:            fromWallet,
-		Amount:            t.Amount,
-		Fee:               t.Fee,
-		TotalAmount:       t.Amount.Add(t.Fee),
-		TransactionType:   TransactionTypeTransfer,
-		TransactionStatus: types.TransactionStatusSuccess,
-		Narration:         t.Narration,
-		CreatedAt:         t.CreatedAt,
-		UpdatedAt:         t.UpdatedAt,
-	})
+	fromWallet, err := a.FindWalletByID(ctx, opts.WalletID)
+	if err != nil {
+		return nil, err
+	}
 
-	ce := types.NewTransactionSummary(types.TxnSummaryParams{
-		IsDebit:           false,
-		Wallet:            toWallet,
-		Amount:            t.Amount,
-		Fee:               t.Fee,
-		TotalAmount:       t.Amount.Add(decimal.Zero),
-		TransactionType:   TransactionTypeTransfer,
-		TransactionStatus: types.TransactionStatusSuccess,
-		Narration:         t.Narration,
-		CreatedAt:         t.CreatedAt,
-		UpdatedAt:         t.UpdatedAt,
-	})
+	toWallet, err := a.FindWalletByID(ctx, opts.WalletID)
+	if err != nil {
+		return nil, err
+	}
 
-	de.SetServiceTxnID(t.ID, false)
-	ce.SetServiceTxnID(t.ID, false)
+	from, to, err := types.TransferWithTxn(fromWallet, toWallet, types.CreditOrDebitWalletOption{})
+	if err != nil {
+		return nil, err
+	}
+
+	//de.SetServiceTxnID(t.ID, false)
+	// ce.SetServiceTxnID(t.ID, false)
 
 	return de, ce
 }
