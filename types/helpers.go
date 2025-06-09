@@ -23,6 +23,44 @@ func (x *CreditOrDebitWalletOption) Validate() error {
 	return nil
 }
 
+type SwapWalletOption struct {
+	FromAmount      decimal.Decimal
+	ToAmount        decimal.Decimal
+	Fee             decimal.Decimal
+	PendTransaction bool
+	TxnCategory     TransactionCategory
+	Status          TransactionStatus
+	Narration       *string `json:"narration"`
+}
+
+func (x *SwapWalletOption) Validate() error {
+	return nil
+}
+
+func (x *SwapWalletOption) ToDebitWalletParams() CreditOrDebitWalletOption {
+	return CreditOrDebitWalletOption{
+		Amount:                 x.FromAmount,
+		Fee:                    x.Fee,
+		PendTransaction:        x.PendTransaction,
+		TxnCategory:            x.TxnCategory,
+		Status:                 x.Status,
+		Narration:              x.Narration,
+		UseThisAsTransactionID: NewTransactionID(),
+	}
+}
+
+func (x *SwapWalletOption) ToCreditWalletParams() CreditOrDebitWalletOption {
+	return CreditOrDebitWalletOption{
+		Amount:                 x.ToAmount,
+		Fee:                    decimal.Zero,
+		PendTransaction:        x.PendTransaction,
+		TxnCategory:            x.TxnCategory,
+		Status:                 x.Status,
+		Narration:              x.Narration,
+		UseThisAsTransactionID: NewTransactionID(),
+	}
+}
+
 func newTransactionSummary(wallet *Wallet, opts CreditOrDebitWalletOption, isDebit bool) Transaction {
 	if strings.TrimSpace(opts.UseThisAsTransactionID) != "" {
 		opts.UseThisAsTransactionID = NewTransactionID()
@@ -116,22 +154,8 @@ func SwapWithTxn(fromWallet *Wallet, toWallet *Wallet, opts SwapWalletOption) (*
 		return nil, nil, err
 	}
 
-	txF := newTransactionSummary(fromWallet, CreditOrDebitWalletOption{""}, true) // FromTransaction
-	txT := newTransactionSummary(toWallet, CreditOrDebitWalletOption{}, false)    // ToTransaction
+	txF := newTransactionSummary(fromWallet, opts.ToDebitWalletParams(), true) // FromTransaction
+	txT := newTransactionSummary(toWallet, opts.ToCreditWalletParams(), false) // ToTransaction
 
 	return &txF, &txT, nil
-}
-
-type SwapWalletOption struct {
-	FromAmount      decimal.Decimal
-	ToAmount        decimal.Decimal
-	Fee             decimal.Decimal
-	PendTransaction bool
-	TxnCategory     TransactionCategory
-	Status          TransactionStatus
-	Narration       *string `json:"narration"`
-}
-
-func (x *SwapWalletOption) Validate() error {
-	return nil
 }

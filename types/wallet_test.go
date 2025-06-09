@@ -362,7 +362,7 @@ func TestWallet_Transfer(t *testing.T) {
 		{
 			name:                "Insufficient transfer to same user",
 			fromWallet:          NewWallet("user1", "USD"),
-			toWallet:            NewWallet("user1", "EUR"),
+			toWallet:            NewWallet("user1", "USD"),
 			transferAmount:      decimal.NewFromInt(500),
 			expectedError:       ErrWalletInsufficientBalance,
 			expectedFromBalance: decimal.NewFromInt(100),
