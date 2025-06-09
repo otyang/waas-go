@@ -18,11 +18,6 @@ type (
 		Transaction     *types.Transaction
 	}
 
-	CreditWalletResponse struct {
-		Wallet      *types.Wallet
-		Transaction *types.Transaction
-	}
-
 	DebitWalletOption struct {
 		WalletID        string
 		Amount          decimal.Decimal
@@ -31,7 +26,7 @@ type (
 		Transaction     *types.Transaction
 	}
 
-	DebitWalletResponse struct {
+	CreditOrDebitWalletResponse struct {
 		Wallet      *types.Wallet
 		Transaction *types.Transaction
 	}
@@ -42,8 +37,8 @@ func (x *CreditWalletOption) Validate() error {
 		return errors.New("transaction parameter shouldn't be empty")
 	}
 
-	if x.Transaction.Type == "" {
-		return errors.New("transaction type parameter shouldn't be empty")
+	if x.Transaction.Category == "" {
+		return errors.New("transaction category parameter shouldn't be empty")
 	}
 
 	if x.Transaction.Narration == nil {
@@ -54,6 +49,14 @@ func (x *CreditWalletOption) Validate() error {
 		x.Transaction.Status = types.TransactionStatusPending
 	}
 
+	if x.Transaction.CreatedAt.IsZero() {
+		x.Transaction.CreatedAt = time.Now()
+	}
+
+	if x.Transaction.UpdatedAt.IsZero() {
+		x.Transaction.UpdatedAt = time.Now()
+	}
+
 	x.Transaction.Amount = x.Amount
 	x.Transaction.Fee = x.Fee
 	x.Transaction.Total = x.Amount.Add(x.Fee)
@@ -61,7 +64,7 @@ func (x *CreditWalletOption) Validate() error {
 	return nil
 }
 
-func (a *Client) CreditWallet(ctx context.Context, opts CreditWalletOption) (*CreditWalletResponse, error) {
+func (a *Client) CreditWallet(ctx context.Context, opts CreditWalletOption) (*CreditOrDebitWalletResponse, error) {
 	wallet, err := a.FindWalletByID(ctx, opts.WalletID)
 	if err != nil {
 		return nil, err
@@ -76,39 +79,19 @@ func (a *Client) CreditWallet(ctx context.Context, opts CreditWalletOption) (*Cr
 		return nil, err
 	}
 
-	transaction := types.NewTransactionForCreditEntry(wallet, opts.Amount, opts.Fee, opts.Transaction.Type)
+	transaction := NewTransaction(wallet, opts.Transaction, true)
 
 	err = a.WithTxBulkUpdateWalletAndInsertTransaction(ctx, []*types.Wallet{wallet}, []*types.Transaction{transaction})
 	if err != nil {
 		return nil, err
 	}
 
-	return &CreditWalletResponse{Wallet: wallet, Transaction: transaction}, nil
+	return &CreditOrDebitWalletResponse{Wallet: wallet, Transaction: transaction}, nil
 }
 
 // ==============================
 
-func (x *DebitWalletOption) Validate() error {
-	if x.Transaction == nil {
-		return errors.New("transaction parameter shouldn't be empty")
-	}
-
-	if x.Transaction.Type == "" {
-		return errors.New("transaction type parameter shouldn't be empty")
-	}
-
-	if x.Transaction.Narration == nil {
-		return errors.New("transaction narration parameter shouldn't be empty")
-	}
-
-	x.Transaction.Amount = x.Amount
-	x.Transaction.Fee = x.Fee
-	x.Transaction.Total = x.Amount.Add(x.Fee)
-
-	return nil
-}
-
-func (a *Client) DebitWallet(ctx context.Context, opts CreditWalletOption) (*CreditWalletResponse, error) {
+func (a *Client) DebitWallet(ctx context.Context, opts CreditWalletOption) (*CreditOrDebitWalletResponse, error) {
 	wallet, err := a.FindWalletByID(ctx, opts.WalletID)
 	if err != nil {
 		return nil, err
@@ -123,33 +106,34 @@ func (a *Client) DebitWallet(ctx context.Context, opts CreditWalletOption) (*Cre
 		return nil, err
 	}
 
-	transaction := types.NewTransactionForDebitEntry(wallet, opts.Amount, opts.Fee, opts.Transaction.Type)
+	transaction := NewTransaction(wallet, opts.Transaction, false)
 
 	err = a.WithTxBulkUpdateWalletAndInsertTransaction(ctx, []*types.Wallet{wallet}, []*types.Transaction{transaction})
 	if err != nil {
 		return nil, err
 	}
 
-	return &CreditWalletResponse{Wallet: wallet, Transaction: transaction}, nil
+	return &CreditOrDebitWalletResponse{Wallet: wallet, Transaction: transaction}, nil
 }
 
 // Creates a new credit transaction entry.
-func NewTransactionForCreditEntry(wallet *Wallet, amount, fee decimal.Decimal, txn types.Transaction) *Transaction {
+func NewTransaction(wallet *types.Wallet, txn *types.Transaction, isCredit bool) *types.Transaction {
 	return &types.Transaction{
-		ID:             types.NewTransactionID(),
-		CustomerID:     wallet.CustomerID,
-		WalletID:       wallet.ID,
-		IsDebit:        false,
-		Currency:       wallet.CurrencyCode,
-		Amount:         amount,
-		Fee:            fee,
-		BalanceAfter:   wallet.AvailableBalance,
-		Type:           txn.Type,
-		Status:         txn.Status,
-		Narration:      nil,
-		CounterpartyID: nil,
-		ReversedAt:     nil,
-		CreatedAt:      time.Now(),
-		UpdatedAt:      time.Now(),
+		ID:           txn.ID,
+		CustomerID:   wallet.CustomerID,
+		WalletID:     wallet.ID,
+		IsDebit:      !isCredit,
+		Currency:     wallet.CurrencyCode,
+		Amount:       txn.Amount,
+		Fee:          txn.Fee,
+		Total:        txn.Total,
+		BalanceAfter: wallet.AvailableBalance,
+		Type:         txn.Type,
+		Status:       txn.Status,
+		Narration:    txn.Narration,
+		ServiceTxnID: txn.ServiceTxnID,
+		ReversedAt:   nil,
+		CreatedAt:    txn.CreatedAt,
+		UpdatedAt:    txn.UpdatedAt,
 	}
 }
