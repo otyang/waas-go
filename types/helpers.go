@@ -8,8 +8,7 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-// ==== Helpers
-
+// ========================================= Helpers
 type CreditOrDebitWalletOption struct {
 	Amount                         decimal.Decimal
 	Fee                            decimal.Decimal
@@ -18,7 +17,7 @@ type CreditOrDebitWalletOption struct {
 	Status                         TransactionStatus
 	Narration                      *string `json:"narration"`
 	OptionalUseThisAsTransactionID string  // if empty it autogenerates new id
-	OptionalLinkedTxnID            string
+	OptionalLinkedTxnID            *string
 }
 
 func (x *CreditOrDebitWalletOption) Validate() error {
@@ -63,7 +62,7 @@ func newTransactionSummary(wallet *Wallet, opts CreditOrDebitWalletOption, isDeb
 		Status:       opts.Status,
 		Narration:    opts.Narration,
 		ServiceTxnID: nil,
-		LinkedTxnID:  &opts.OptionalLinkedTxnID,
+		LinkedTxnID:  opts.OptionalLinkedTxnID,
 		ReversedAt:   nil,
 		CreatedAt:    time.Now(),
 		UpdatedAt:    time.Now(),
@@ -101,6 +100,66 @@ func CreditBalanceWithTxn(wlt *Wallet, opts CreditOrDebitWalletOption) (*Transac
 	return &tx, wlt, nil
 }
 
+// =============================== transfer helpers
+type TransferWalletOption struct {
+	Amount                         decimal.Decimal
+	Fee                            decimal.Decimal
+	PendTransaction                bool
+	TxnCategory                    TransactionCategory
+	Status                         TransactionStatus
+	Narration                      *string `json:"narration"`
+	OptionalUseThisAsTransactionID string  // if empty it autogenerates new id
+	OptionalLinkedTxnID            string
+}
+
+func (x *TransferWalletOption) Validate() error {
+	x.TxnCategory = "transfer"
+
+	if x.Narration == nil {
+		return errors.New("transaction narration shouldn't be empty")
+	}
+
+	if x.PendTransaction {
+		x.Status = TransactionStatusPending
+	}
+
+	return nil
+}
+
+func (x *TransferWalletOption) ToTxnSummary() CreditOrDebitWalletOption {
+	return CreditOrDebitWalletOption{
+		Amount:                         x.Amount,
+		Fee:                            x.Fee,
+		PendTransaction:                x.PendTransaction,
+		TxnCategory:                    x.TxnCategory,
+		Status:                         x.Status,
+		Narration:                      x.Narration,
+		OptionalUseThisAsTransactionID: NewTransactionID(),
+	}
+}
+
+func TransferWithTxn(fromWallet *Wallet, toWallet *Wallet, opts TransferWalletOption) (*Transaction, *Transaction, error) {
+	opts.TxnCategory = "transfer"
+
+	if err := opts.Validate(); err != nil {
+		return nil, nil, err
+	}
+
+	err := fromWallet.TransferTo(toWallet, opts.Amount, opts.Fee)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	txF := newTransactionSummary(fromWallet, opts.ToTxnSummary(), true) // FromTransaction
+	txT := newTransactionSummary(toWallet, opts.ToTxnSummary(), false)  // ToTransaction
+
+	txF.SetLinkedTxnID(txT.ID, false)
+	txT.SetLinkedTxnID(txF.ID, false)
+
+	return &txF, &txT, nil
+}
+
+// =============================== swap helpers
 type SwapWalletOption struct {
 	FromAmount      decimal.Decimal
 	ToAmount        decimal.Decimal
@@ -137,27 +196,6 @@ func (x *SwapWalletOption) ToCreditWalletParams() CreditOrDebitWalletOption {
 		Narration:                      x.Narration,
 		OptionalUseThisAsTransactionID: NewTransactionID(),
 	}
-}
-
-func TransferWithTxn(fromWallet *Wallet, toWallet *Wallet, opts CreditOrDebitWalletOption) (*Transaction, *Transaction, error) {
-	opts.TxnCategory = "transfer"
-
-	if err := opts.Validate(); err != nil {
-		return nil, nil, err
-	}
-
-	err := fromWallet.TransferTo(toWallet, opts.Amount, opts.Fee)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	txF := newTransactionSummary(fromWallet, opts, true) // FromTransaction
-	txT := newTransactionSummary(toWallet, opts, false)  // ToTransaction
-
-	txF.SetLinkedTxnID(txT.ID, false)
-	txT.SetLinkedTxnID(txF.ID, false)
-
-	return &txF, &txT, nil
 }
 
 func SwapWithTxn(fromWallet *Wallet, toWallet *Wallet, opts SwapWalletOption) (*Transaction, *Transaction, error) {

@@ -56,7 +56,6 @@ func (a *Client) CreditWallet(ctx context.Context, opts CreditOrDebitOption) (*C
 		Narration:                      opts.Narration,
 		OptionalUseThisAsTransactionID: opts.UseThisAsTransactionID,
 	})
-
 	if err != nil {
 		return nil, err
 	}

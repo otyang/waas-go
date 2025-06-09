@@ -51,7 +51,6 @@ func NewWithMigration(ctx context.Context, db *bun.DB) (*Client, error) {
 }
 
 func (t *Transfer) ToTransaction(fromWalletID, toWalletID *types.Wallet) (fromTx, toTx *types.Transaction) {
-
 	fromWallet, err := a.FindWalletByID(ctx, opts.WalletID)
 	if err != nil {
 		return nil, err
@@ -67,7 +66,7 @@ func (t *Transfer) ToTransaction(fromWalletID, toWalletID *types.Wallet) (fromTx
 		return nil, err
 	}
 
-	//de.SetServiceTxnID(t.ID, false)
+	// de.SetServiceTxnID(t.ID, false)
 	// ce.SetServiceTxnID(t.ID, false)
 
 	return de, ce

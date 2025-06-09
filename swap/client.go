@@ -76,7 +76,6 @@ func (a *Client) List(ctx context.Context, opts ListSwapParams) ([]Swap, error) 
 }
 
 func (a *Client) Create(ctx context.Context, opts *Swap) (*Swap, error) {
-
 	sourceWallet, err := a.account.FindWalletByCurrencyCode(ctx, opts.SourceCurrencyCode, opts.CustomerID)
 	if err != nil {
 		return nil, err
