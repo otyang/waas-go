@@ -100,16 +100,64 @@ func CreditBalanceWithTxn(wlt *Wallet, opts CreditOrDebitWalletOption) (*Transac
 	return &tx, wlt, nil
 }
 
+// Credit Balance to a wallet and generates Transaction.
+func ReverseTxWithTxn(txn *Transaction, wlt *Wallet) (*Transaction, *Wallet, error) {
+	if err := opts.Validate(); err != nil {
+		return nil, nil, err
+	}
+
+	if !txn.ReversedAt.IsZero() {
+		//
+	}
+
+	reversedAt := time.Now()
+	txn.Status = TransactionStatusFailed
+	txn.ReversedAt = &reversedAt
+
+	if txn.IsDebit {
+		rT, rW, err := CreditBalanceWithTxn(wlt, CreditOrDebitWalletOption{
+			Amount:          txn.Amount,
+			Fee:             txn.Fee,
+			PendTransaction: false,
+			TxnCategory:     txn.Category,
+			Status:          TransactionStatusSuccess, //Reversal are alwayssucceful
+			Narration:       txn.Narration,
+		})
+		if err != nil {
+			return nil, nil, err
+		}
+
+		return txn, rT, rW, err
+	}
+
+	if !txn.IsDebit {
+		rT, rW, err := DebitBalanceWithTxn(wlt, CreditOrDebitWalletOption{
+			Amount:          txn.Amount,
+			Fee:             txn.Fee,
+			PendTransaction: false,
+			TxnCategory:     txn.Category,
+			Status:          TransactionStatusSuccess, //Reversal are alwayssucceful
+			Narration:       txn.Narration,
+		})
+		if err != nil {
+			return nil, nil, err
+		}
+
+		return txn, rT, rW, err
+	}
+
+	tx := newTransactionSummary(wlt, opts, false)
+	return &tx, wlt, nil
+}
+
 // =============================== transfer helpers
 type TransferWalletOption struct {
-	Amount                         decimal.Decimal
-	Fee                            decimal.Decimal
-	PendTransaction                bool
-	TxnCategory                    TransactionCategory
-	Status                         TransactionStatus
-	Narration                      *string `json:"narration"`
-	OptionalUseThisAsTransactionID string  // if empty it autogenerates new id
-	OptionalLinkedTxnID            string
+	Amount          decimal.Decimal
+	Fee             decimal.Decimal
+	PendTransaction bool
+	TxnCategory     TransactionCategory
+	Status          TransactionStatus
+	Narration       *string `json:"narration"`
 }
 
 func (x *TransferWalletOption) Validate() error {
@@ -128,13 +176,12 @@ func (x *TransferWalletOption) Validate() error {
 
 func (x *TransferWalletOption) ToTxnSummary() CreditOrDebitWalletOption {
 	return CreditOrDebitWalletOption{
-		Amount:                         x.Amount,
-		Fee:                            x.Fee,
-		PendTransaction:                x.PendTransaction,
-		TxnCategory:                    x.TxnCategory,
-		Status:                         x.Status,
-		Narration:                      x.Narration,
-		OptionalUseThisAsTransactionID: NewTransactionID(),
+		Amount:          x.Amount,
+		Fee:             x.Fee,
+		PendTransaction: x.PendTransaction,
+		TxnCategory:     x.TxnCategory,
+		Status:          x.Status,
+		Narration:       x.Narration,
 	}
 }
 
@@ -153,8 +200,8 @@ func TransferWithTxn(fromWallet *Wallet, toWallet *Wallet, opts TransferWalletOp
 	txF := newTransactionSummary(fromWallet, opts.ToTxnSummary(), true) // FromTransaction
 	txT := newTransactionSummary(toWallet, opts.ToTxnSummary(), false)  // ToTransaction
 
-	txF.SetLinkedTxnID(txT.ID, false)
-	txT.SetLinkedTxnID(txF.ID, false)
+	txF.SetLinkedTxnID(txT.ID, false) // set linked ID
+	txT.SetLinkedTxnID(txF.ID, false) // set linked ID
 
 	return &txF, &txT, nil
 }
@@ -213,8 +260,8 @@ func SwapWithTxn(fromWallet *Wallet, toWallet *Wallet, opts SwapWalletOption) (*
 	txF := newTransactionSummary(fromWallet, opts.ToDebitWalletParams(), true) // FromTransaction
 	txT := newTransactionSummary(toWallet, opts.ToCreditWalletParams(), false) // ToTransaction
 
-	txF.SetLinkedTxnID(txT.ID, false)
-	txT.SetLinkedTxnID(txF.ID, false)
+	txF.SetLinkedTxnID(txT.ID, false) // set linked ID
+	txT.SetLinkedTxnID(txF.ID, false) // set linked ID
 
 	return &txF, &txT, nil
 }

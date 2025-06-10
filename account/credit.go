@@ -95,8 +95,8 @@ func (a *Client) DebitWallet(ctx context.Context, opts CreditOrDebitOption) (*Cr
 	return &CreditOrDebitWalletResponse{Wallet: w, Transaction: t}, nil
 }
 
-// TransferOpts defines parameters for transferring funds between wallets.
 type (
+	// TransferOpts defines parameters for transferring funds between wallets.
 	TransferOption struct {
 		FromWalletID    string          `json:"fromWid"`
 		ToWalletID      string          `json:"toWid"`
@@ -108,7 +108,21 @@ type (
 		Status          types.TransactionStatus
 	}
 
-	TransferResponse struct {
+	// SwapOpts defines parameters for swapping currencies between wallets.
+	SwapOption struct {
+		CustomerID       string
+		FromCurrencyCode string
+		ToCurrencyCode   string
+		FromAmount       decimal.Decimal
+		FromFee          decimal.Decimal
+		ToAmount         decimal.Decimal
+		PendTransaction  bool
+		TxnCategory      types.TransactionCategory
+		Status           types.TransactionStatus
+		Narration        *string `json:"narration"`
+	}
+
+	TransferOrSwapResponse struct {
 		FromWallet      *types.Wallet
 		ToWallet        *types.Wallet
 		FromTransaction *types.Transaction
@@ -116,7 +130,7 @@ type (
 	}
 )
 
-func (a *Client) Transfer(ctx context.Context, opts TransferOption) (*TransferResponse, error) {
+func (a *Client) Transfer(ctx context.Context, opts TransferOption) (*TransferOrSwapResponse, error) {
 	fromWallet, err := a.FindWalletByID(ctx, opts.FromWalletID)
 	if err != nil {
 		return nil, err
@@ -127,7 +141,7 @@ func (a *Client) Transfer(ctx context.Context, opts TransferOption) (*TransferRe
 		return nil, err
 	}
 
-	fromTXN, toTXN, err := types.TransferWithTxn(fromWallet, toWallet, types.CreditOrDebitWalletOption{
+	fromTXN, toTXN, err := types.TransferWithTxn(fromWallet, toWallet, types.TransferWalletOption{
 		Amount:          opts.Amount,
 		Fee:             opts.Fee,
 		PendTransaction: opts.PendTransaction,
@@ -142,29 +156,37 @@ func (a *Client) Transfer(ctx context.Context, opts TransferOption) (*TransferRe
 	err = a.WithTxBulkUpdateWalletAndInsertTransaction(
 		ctx, []*types.Wallet{fromWallet, toWallet}, []*types.Transaction{fromTXN, toTXN},
 	)
+
+	return &TransferOrSwapResponse{fromWallet, toWallet, fromTXN, toTXN}, err
+}
+
+func (a *Client) Swap(ctx context.Context, opts SwapOption) (*TransferOrSwapResponse, error) {
+	fromWallet, err := a.FindWalletByCurrencyCode(ctx, opts.FromCurrencyCode, opts.CustomerID)
 	if err != nil {
 		return nil, err
 	}
 
-	return &TransferResponse{fromWallet, toWallet, fromTXN, toTXN}, nil
+	toWallet, err := a.FindWalletByCurrencyCode(ctx, opts.ToCurrencyCode, opts.CustomerID)
+	if err != nil {
+		return nil, err
+	}
+
+	fromTXN, toTXN, err := types.SwapWithTxn(fromWallet, toWallet, types.SwapWalletOption{
+		FromAmount:      opts.FromAmount,
+		ToAmount:        opts.ToAmount,
+		Fee:             opts.FromFee,
+		PendTransaction: opts.PendTransaction,
+		TxnCategory:     opts.TxnCategory,
+		Status:          opts.Status,
+		Narration:       opts.Narration,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = a.WithTxBulkUpdateWalletAndInsertTransaction(
+		ctx, []*types.Wallet{fromWallet, toWallet}, []*types.Transaction{fromTXN, toTXN},
+	)
+
+	return &TransferOrSwapResponse{fromWallet, toWallet, fromTXN, toTXN}, err
 }
-
-// =====
-type (
-	// SwapOpts defines parameters for swapping currencies between wallets.
-	SwapRequestOpts struct {
-		CustomerID       string
-		FromCurrencyCode string
-		ToCurrencyCode   string
-		FromAmount       decimal.Decimal
-		FromFee          decimal.Decimal
-		ToAmount         decimal.Decimal
-	}
-
-	SwapWalletResponse struct {
-		FromWallet      *types.Wallet
-		ToWallet        *types.Wallet
-		FromTransaction *types.Transaction
-		ToTransaction   *types.Transaction
-	}
-)
