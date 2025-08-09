@@ -1,73 +1,83 @@
 package types
 
 import (
-	"strings"
 	"time"
 
 	"github.com/shopspring/decimal"
 )
 
-type (
-	TransactionCategory string
-	TransactionStatus   string
-)
+// TransactionCategory defines the type of transaction being performed
+type TransactionCategory string
 
 const (
-	TransactionStatusNew     TransactionStatus = "NEW"
-	TransactionStatusFailed  TransactionStatus = "FAILED"
-	TransactionStatusPending TransactionStatus = "PENDING"
-	TransactionStatusSuccess TransactionStatus = "SUCCESS"
+	CategoryDeposit    TransactionCategory = "DEPOSIT"    // Funds being added to wallet
+	CategoryTransfer   TransactionCategory = "TRANSFER"   // Funds moving between wallets
+	CategoryRefund     TransactionCategory = "REFUND"     // Funds being returned
+	CategoryAdjustment TransactionCategory = "ADJUSTMENT" // Manual balance adjustment
+	CategoryFee        TransactionCategory = "FEE"        // Transaction fee deduction
 )
 
-// Transaction errors
-var (
-	ErrInvalidTransactionObject           = NewWaasError("invalid transaction: nil transaction object")
-	ErrTransactionUnsupportedReversalType = NewWaasError("unsupported transaction type for reversal")
-	ErrTransactionAlreadyReversed         = NewWaasError("cannot reverse an already reversed transaction")
+// TransactionType indicates the direction of funds movement
+type TransactionType string
+
+const (
+	TypeCredit TransactionType = "CREDIT" // Funds being added
+	TypeDebit  TransactionType = "DEBIT"  // Funds being deducted
 )
 
-type Transaction struct {
-	ID           string              `json:"id" bun:"id,pk"`
-	CustomerID   string              `json:"customerId" bun:",notnull"`
-	WalletID     string              `json:"walletId" bun:",notnull"`
-	IsDebit      bool                `json:"isDebit" bun:",notnull"`
-	Currency     string              `json:"currency" bun:",notnull"`
-	Amount       decimal.Decimal     `json:"amount" bun:"type:decimal(24,8),notnull"`
-	Fee          decimal.Decimal     `json:"fee" bun:"type:decimal(24,8),notnull"`
-	Total        decimal.Decimal     `json:"total" bun:"type:decimal(24,8),notnull"`
-	BalanceAfter decimal.Decimal     `json:"balanceAfter" bun:"type:decimal(24,8),notnull"`
-	Category     TransactionCategory `json:"category" bun:",notnull"`
-	Status       TransactionStatus   `json:"status" bun:",notnull"`
-	Narration    *string             `json:"narration"`
-	ServiceTxnID *string             `json:"serviceTxnId"`
-	LinkedTxnID  *string             `json:"linkedTxnId"`
-	ReversedAt   *time.Time          `json:"reversedAt"`
-	CreatedAt    time.Time           `json:"createdAt" bun:",notnull"`
-	UpdatedAt    time.Time           `json:"updatedAt" bun:",notnull"`
-}
+// TransactionStatus represents the current state of a transaction
+type TransactionStatus string
 
-// SetServiceTxnID sets the counterparty ID of the transaction.
-func (t *Transaction) SetServiceTxnID(id string, reversed bool) *Transaction {
-	if trimmedID := strings.TrimSpace(id); trimmedID != "" {
-		t.ServiceTxnID = &trimmedID
+const (
+	StatusCompleted TransactionStatus = "COMPLETED" // Successfully processed
+	StatusFailed    TransactionStatus = "FAILED"    // Processing failed
+	StatusPending   TransactionStatus = "PENDING"   // Awaiting processing
+)
 
-		if reversed {
-			_time := time.Now()
-			t.ReversedAt = &_time
-		}
-	}
-	return t
-}
+// TransactionHistory contains the complete record of a wallet transaction
+type TransactionHistory struct {
+	// ID is the unique identifier for this transaction record
+	ID string `json:"id"`
 
-// SetServiceTxnID sets the counterparty ID of the transaction.
-func (t *Transaction) SetLinkedTxnID(id string, reversed bool) *Transaction {
-	if trimmedID := strings.TrimSpace(id); trimmedID != "" {
-		t.LinkedTxnID = &trimmedID
+	// WalletID identifies the wallet involved in the transaction
+	WalletID string `json:"walletId"`
 
-		if reversed {
-			_time := time.Now()
-			t.ReversedAt = &_time
-		}
-	}
-	return t
+	// CurrencyCode specifies the wallet's currency at time of transaction
+	CurrencyCode string `json:"currencyCode"`
+
+	// InitiatorID identifies who initiated the transaction
+	InitiatorID string `json:"initiatorId"`
+
+	// ExternalReference is a reference ID from an external system
+	ExternalReference string `json:"externalReference"`
+
+	// Category classifies the type of transaction
+	Category TransactionCategory `json:"category"`
+
+	// Description provides human-readable context for the transaction
+	Description string `json:"description"`
+
+	// Amount is the principal value moved in this transaction
+	Amount decimal.Decimal `json:"amount"`
+
+	// Fee is the processing fee deducted (if any)
+	Fee decimal.Decimal `json:"fee"`
+
+	// Type indicates the direction of funds (credit/debit)
+	Type TransactionType `json:"type"`
+
+	// BalanceBefore is the wallet's available balance before the transaction
+	BalanceBefore decimal.Decimal `json:"balanceBefore"`
+
+	// BalanceAfter is the wallet's available balance after the transaction
+	BalanceAfter decimal.Decimal `json:"balanceAfter"`
+
+	// InitiatedAt is when the transaction was first requested
+	InitiatedAt time.Time `json:"initiatedAt"`
+
+	// CompletedAt is when the transaction was finalized
+	CompletedAt time.Time `json:"completedAt"`
+
+	// Status indicates the final disposition of the transaction
+	Status TransactionStatus `json:"status"`
 }

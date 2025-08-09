@@ -2,266 +2,186 @@ package types
 
 import (
 	"errors"
-	"strings"
+	"fmt"
 	"time"
 
+	gonanoid "github.com/matoous/go-nanoid"
 	"github.com/shopspring/decimal"
 )
 
-// ========================================= Helpers
-type CreditOrDebitWalletOption struct {
-	Amount                         decimal.Decimal
-	Fee                            decimal.Decimal
-	PendTransaction                bool
-	TxnCategory                    TransactionCategory
-	Status                         TransactionStatus
-	Narration                      *string `json:"narration"`
-	OptionalUseThisAsTransactionID string  // if empty it autogenerates new id
-	OptionalLinkedTxnID            *string
+func NewTransactionID() string {
+	return GenerateID("txn_"+time.Now().UTC().Format("20060102")+"_", 8)
 }
 
-func (x *CreditOrDebitWalletOption) Validate() error {
-	if x.TxnCategory == "" {
-		return errors.New("transaction category parameter shouldn't be empty")
-	}
-
-	if x.Narration == nil {
-		return errors.New("transaction narration parameter shouldn't be empty")
-	}
-
-	if x.PendTransaction {
-		x.Status = TransactionStatusPending
-	}
-
-	return nil
+func GenerateID(prefix string, size int) string {
+	return prefix + gonanoid.MustGenerate("0123456789abcdefghijklmnopqrstuvwxyz", size)
 }
 
-func newTransactionSummary(wallet *Wallet, opts CreditOrDebitWalletOption, isDebit bool) Transaction {
-	if strings.TrimSpace(opts.OptionalUseThisAsTransactionID) != "" {
-		opts.OptionalUseThisAsTransactionID = NewTransactionID()
-	}
-
-	var totalAmount decimal.Decimal
-	if isDebit {
-		totalAmount = opts.Amount.Add(opts.Fee)
-	} else {
-		totalAmount = opts.Amount.Sub(opts.Fee)
-	}
-
-	return Transaction{
-		ID:           opts.OptionalUseThisAsTransactionID,
-		CustomerID:   wallet.CustomerID,
-		WalletID:     wallet.ID,
-		IsDebit:      isDebit,
-		Currency:     wallet.CurrencyCode,
-		Amount:       opts.Amount,
-		Fee:          opts.Fee,
-		Total:        totalAmount,
-		BalanceAfter: wallet.AvailableBalance,
-		Category:     opts.TxnCategory,
-		Status:       opts.Status,
-		Narration:    opts.Narration,
-		ServiceTxnID: nil,
-		LinkedTxnID:  opts.OptionalLinkedTxnID,
-		ReversedAt:   nil,
-		CreatedAt:    time.Now(),
-		UpdatedAt:    time.Now(),
-	}
+type WalletSummary struct {
+	*Wallet       `json:"wallet"`       // Embedded Wallet
+	*CurrencyInfo `json:"currencyInfo"` // Embedded CurrencyInfo
+	// Computed field (not stored, calculated when needed)
+	TotalBalanceInUSD decimal.Decimal `json:"totalBalanceInUSD"`
 }
 
-// Debit Balance from a wallet and generates Transaction.
-func DebitBalanceWithTxn(wlt *Wallet, opts CreditOrDebitWalletOption) (*Transaction, *Wallet, error) {
-	if err := opts.Validate(); err != nil {
-		return nil, nil, err
+// GenerateWalletSummaries creates WalletSummary objects by combining wallet data with currency information
+// and converting balances to USD using provided exchange rates.
+//
+// Parameters:
+//   - wallets: List of Wallet pointers to process
+//   - currencies: List of CurrencyInfo pointers for currency details
+//   - exchangeRates: Map of currency codes to their USD exchange rates
+//
+// Returns:
+//   - []*WalletSummary: List of created wallet summaries
+//   - error: Aggregate error if any issues occurred (partial results may still be returned)
+func GenerateWalletSummaries(
+	wallets []*Wallet,
+	currencies []*CurrencyInfo,
+	exchangeRates map[string]float64,
+) ([]*WalletSummary, error) {
+	// Convert float64 rates to decimal.Decimal for precise calculations
+	decimalRates := make(map[string]decimal.Decimal, len(exchangeRates))
+	for code, rate := range exchangeRates {
+		if rate <= 0 {
+			return nil, fmt.Errorf("invalid exchange rate for %s: must be positive", code)
+		}
+		decimalRates[code] = decimal.NewFromFloat(rate)
 	}
 
-	err := wlt.DebitBalance(opts.Amount, opts.Fee)
-	if err != nil {
-		return nil, nil, err
+	// Create currency lookup map for O(1) access
+	currencyMap := make(map[string]*CurrencyInfo)
+	for _, ci := range currencies {
+		currencyMap[ci.Code] = ci
 	}
 
-	tx := newTransactionSummary(wlt, opts, true)
+	var summaries []*WalletSummary
+	var errs []error
 
-	return &tx, wlt, nil
-}
-
-// Credit Balance to a wallet and generates Transaction.
-func CreditBalanceWithTxn(wlt *Wallet, opts CreditOrDebitWalletOption) (*Transaction, *Wallet, error) {
-	if err := opts.Validate(); err != nil {
-		return nil, nil, err
-	}
-
-	err := wlt.CreditBalance(opts.Amount, opts.Fee)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	tx := newTransactionSummary(wlt, opts, false)
-	return &tx, wlt, nil
-}
-
-// Credit Balance to a wallet and generates Transaction.
-func ReverseTxWithTxn(txn *Transaction, wlt *Wallet) (*Transaction, *Wallet, error) {
-	if err := opts.Validate(); err != nil {
-		return nil, nil, err
-	}
-
-	if !txn.ReversedAt.IsZero() {
-		//
-	}
-
-	reversedAt := time.Now()
-	txn.Status = TransactionStatusFailed
-	txn.ReversedAt = &reversedAt
-
-	if txn.IsDebit {
-		rT, rW, err := CreditBalanceWithTxn(wlt, CreditOrDebitWalletOption{
-			Amount:          txn.Amount,
-			Fee:             txn.Fee,
-			PendTransaction: false,
-			TxnCategory:     txn.Category,
-			Status:          TransactionStatusSuccess, //Reversal are alwayssucceful
-			Narration:       txn.Narration,
-		})
-		if err != nil {
-			return nil, nil, err
+	for _, wallet := range wallets {
+		// Skip nil wallets
+		if wallet == nil {
+			errs = append(errs, fmt.Errorf("nil wallet encountered"))
+			continue
 		}
 
-		return txn, rT, rW, err
-	}
-
-	if !txn.IsDebit {
-		rT, rW, err := DebitBalanceWithTxn(wlt, CreditOrDebitWalletOption{
-			Amount:          txn.Amount,
-			Fee:             txn.Fee,
-			PendTransaction: false,
-			TxnCategory:     txn.Category,
-			Status:          TransactionStatusSuccess, //Reversal are alwayssucceful
-			Narration:       txn.Narration,
-		})
-		if err != nil {
-			return nil, nil, err
+		// Find matching currency info
+		currency, exists := currencyMap[wallet.CurrencyCode]
+		if !exists {
+			errs = append(errs, fmt.Errorf("currency info not found for wallet %s: %s", wallet.ID, wallet.CurrencyCode))
+			continue
 		}
 
-		return txn, rT, rW, err
+		// Get exchange rate (prefer provided rates, fallback to currency's rate)
+		rate, rateExists := decimalRates[wallet.CurrencyCode]
+		if !rateExists {
+			if currency.IsFiat && currency.AutomaticUpdate {
+				errs = append(errs, fmt.Errorf("exchange rate required for fiat currency %s in wallet %s",
+					wallet.CurrencyCode, wallet.ID))
+				continue
+			}
+			rate = decimal.NewFromFloat(1.0) // Default for crypto/stablecoins without rate
+		}
+
+		// Create wallet summary
+		summary := &WalletSummary{
+			Wallet:       wallet,
+			CurrencyInfo: currency,
+		}
+
+		// Calculate USD balance
+		totalBalance := wallet.TotalBalance()
+		if wallet.CurrencyCode == "USD" {
+			summary.TotalBalanceInUSD = totalBalance
+		} else {
+			summary.TotalBalanceInUSD = totalBalance.Mul(rate)
+		}
+
+		summaries = append(summaries, summary)
 	}
 
-	tx := newTransactionSummary(wlt, opts, false)
-	return &tx, wlt, nil
+	// Return combined error if any errors occurred
+	if len(errs) > 0 {
+		return summaries, fmt.Errorf("%d errors occurred during processing: %v",
+			len(errs), errors.Join(errs...))
+	}
+
+	return summaries, nil
 }
 
-// =============================== transfer helpers
-type TransferWalletOption struct {
-	Amount          decimal.Decimal
-	Fee             decimal.Decimal
-	PendTransaction bool
-	TxnCategory     TransactionCategory
-	Status          TransactionStatus
-	Narration       *string `json:"narration"`
+type TotalBalanceInSpecificCurrency struct {
+	Total        decimal.Decimal
+	CurrencyInfo *CurrencyInfo
 }
 
-func (x *TransferWalletOption) Validate() error {
-	x.TxnCategory = "transfer"
-
-	if x.Narration == nil {
-		return errors.New("transaction narration shouldn't be empty")
-	}
-
-	if x.PendTransaction {
-		x.Status = TransactionStatusPending
-	}
-
-	return nil
-}
-
-func (x *TransferWalletOption) ToTxnSummary() CreditOrDebitWalletOption {
-	return CreditOrDebitWalletOption{
-		Amount:          x.Amount,
-		Fee:             x.Fee,
-		PendTransaction: x.PendTransaction,
-		TxnCategory:     x.TxnCategory,
-		Status:          x.Status,
-		Narration:       x.Narration,
-	}
-}
-
-func TransferWithTxn(fromWallet *Wallet, toWallet *Wallet, opts TransferWalletOption) (*Transaction, *Transaction, error) {
-	opts.TxnCategory = "transfer"
-
-	if err := opts.Validate(); err != nil {
-		return nil, nil, err
-	}
-
-	err := fromWallet.TransferTo(toWallet, opts.Amount, opts.Fee)
+// CalculateTotalBalanceInCurrency aggregates balances from multiple WalletSummary objects
+// and converts them to the specified target currency using provided exchange rates.
+//
+// Parameters:
+//   - summaries: Slice of WalletSummary pointers to process
+//   - exchangeRates: Map of currency codes to their exchange rates (relative to USD)
+//   - targetCurrency: The currency code to convert all balances to (e.g., "EUR")
+//   - currencies: List of available currency info for validation
+//
+// Returns:
+//   - TotalBalanceInSpecificCurrency containing aggregated balance and currency info
+//   - error if any conversion fails or currencies are invalid
+func CalculateTotalBalanceInCurrency(
+	summaries []*WalletSummary,
+	exchangeRates map[string]float64,
+	targetCurrency string,
+	currencies []CurrencyInfo,
+) (*TotalBalanceInSpecificCurrency, error) {
+	// Validate target currency exists
+	targetCurrencyInfo, err := FindCurrencyInfo(currencies, targetCurrency)
 	if err != nil {
-		return nil, nil, err
+		return nil, fmt.Errorf("target currency not found: %w", err)
 	}
 
-	txF := newTransactionSummary(fromWallet, opts.ToTxnSummary(), true) // FromTransaction
-	txT := newTransactionSummary(toWallet, opts.ToTxnSummary(), false)  // ToTransaction
-
-	txF.SetLinkedTxnID(txT.ID, false) // set linked ID
-	txT.SetLinkedTxnID(txF.ID, false) // set linked ID
-
-	return &txF, &txT, nil
-}
-
-// =============================== swap helpers
-type SwapWalletOption struct {
-	FromAmount      decimal.Decimal
-	ToAmount        decimal.Decimal
-	Fee             decimal.Decimal
-	PendTransaction bool
-	TxnCategory     TransactionCategory
-	Status          TransactionStatus
-	Narration       *string `json:"narration"`
-}
-
-func (x *SwapWalletOption) Validate() error {
-	return nil
-}
-
-func (x *SwapWalletOption) ToDebitWalletParams() CreditOrDebitWalletOption {
-	return CreditOrDebitWalletOption{
-		Amount:                         x.FromAmount,
-		Fee:                            x.Fee,
-		PendTransaction:                x.PendTransaction,
-		TxnCategory:                    x.TxnCategory,
-		Status:                         x.Status,
-		Narration:                      x.Narration,
-		OptionalUseThisAsTransactionID: NewTransactionID(),
-	}
-}
-
-func (x *SwapWalletOption) ToCreditWalletParams() CreditOrDebitWalletOption {
-	return CreditOrDebitWalletOption{
-		Amount:                         x.ToAmount,
-		Fee:                            decimal.Zero,
-		PendTransaction:                x.PendTransaction,
-		TxnCategory:                    x.TxnCategory,
-		Status:                         x.Status,
-		Narration:                      x.Narration,
-		OptionalUseThisAsTransactionID: NewTransactionID(),
-	}
-}
-
-func SwapWithTxn(fromWallet *Wallet, toWallet *Wallet, opts SwapWalletOption) (*Transaction, *Transaction, error) {
-	opts.TxnCategory = "swap"
-
-	if err := opts.Validate(); err != nil {
-		return nil, nil, err
+	// Convert all rates to decimal upfront
+	decimalRates := make(map[string]decimal.Decimal)
+	for code, rate := range exchangeRates {
+		if rate <= 0 {
+			return nil, fmt.Errorf("invalid exchange rate for %s: must be positive", code)
+		}
+		decimalRates[code] = decimal.NewFromFloat(rate)
 	}
 
-	err := fromWallet.Swap(toWallet, opts.FromAmount, opts.ToAmount, opts.Fee)
-	if err != nil {
-		return nil, nil, err
+	total := decimal.Zero
+	var errs []error
+
+	for _, summary := range summaries {
+		if summary == nil {
+			continue // skip nil summaries
+		}
+
+		// Get wallet balance in USD (already calculated in WalletSummary)
+		balanceUSD := summary.TotalBalanceInUSD
+
+		// Convert from USD to target currency
+		if targetCurrency == "USD" {
+			total = total.Add(balanceUSD)
+			continue
+		}
+
+		// Get USD to target currency rate
+		rate, exists := decimalRates[targetCurrency]
+		if !exists {
+			errs = append(errs, fmt.Errorf("exchange rate not available for target currency %s", targetCurrency))
+			continue
+		}
+
+		// USD -> Target: divide by rate (since rates are USD-based)
+		convertedBalance := balanceUSD.Div(rate)
+		total = total.Add(convertedBalance)
 	}
 
-	txF := newTransactionSummary(fromWallet, opts.ToDebitWalletParams(), true) // FromTransaction
-	txT := newTransactionSummary(toWallet, opts.ToCreditWalletParams(), false) // ToTransaction
+	if len(errs) > 0 {
+		return nil, fmt.Errorf("%d conversion errors occurred: %w", len(errs), errors.Join(errs...))
+	}
 
-	txF.SetLinkedTxnID(txT.ID, false) // set linked ID
-	txT.SetLinkedTxnID(txF.ID, false) // set linked ID
-
-	return &txF, &txT, nil
+	return &TotalBalanceInSpecificCurrency{
+		Total:        total,
+		CurrencyInfo: targetCurrencyInfo,
+	}, nil
 }

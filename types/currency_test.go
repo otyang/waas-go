@@ -1,172 +1,362 @@
 package types
 
 import (
-	"fmt"
+	"errors"
 	"testing"
-	"time"
 
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestFindCurrency(t *testing.T) {
-	t.Parallel()
-
-	// Setup Currencies
-	currencies := []Currency{
-		{Code: "USD", RateBuy: decimal.NewFromInt(100), RateSell: decimal.NewFromInt(101)},
-		{Code: "EUR", RateBuy: decimal.NewFromInt(120), RateSell: decimal.NewFromInt(121)},
+func TestNewRateCalculator(t *testing.T) {
+	baseCurrency := "USD"
+	currencies := []CurrencyInfo{
+		{Code: "USD", SpreadMarginBuy: decimal.NewFromFloat(0.01), SpreadMarginSell: decimal.NewFromFloat(0.01)},
+		{Code: "EUR", SpreadMarginBuy: decimal.NewFromFloat(0.02), SpreadMarginSell: decimal.NewFromFloat(0.02)},
+	}
+	rates := map[string]float64{
+		"USD": 1.0,
+		"EUR": 0.85,
 	}
 
-	// Valid code
-	currency, err := FindCurrency(currencies, "USD")
-	assert.NoError(t, err)
-	assert.Equal(t, currency.Code, "USD")
+	t.Run("successful creation", func(t *testing.T) {
+		rc, err := NewRateCalculator(baseCurrency, currencies, rates)
+		assert.NoError(t, err)
+		assert.Equal(t, baseCurrency, rc.GetBaseCurrency())
+	})
 
-	// Invalid code
-	_, err = FindCurrency(currencies, "GBP")
-	assert.Error(t, err)
-	assert.Equal(t, fmt.Errorf(ErrCurrencyNotFound, "GBP"), err)
+	t.Run("empty base currency", func(t *testing.T) {
+		_, err := NewRateCalculator("", currencies, rates)
+		assert.Equal(t, ErrBaseCurrencyNotFound, err)
+	})
 
-	// Empty currency source
-	_, err = FindCurrency(nil, "USD")
-	assert.Error(t, err)
-	assert.Equal(t, ErrEmptyCurrencySource, err)
+	t.Run("empty currencies", func(t *testing.T) {
+		_, err := NewRateCalculator(baseCurrency, []CurrencyInfo{}, rates)
+		assert.Equal(t, ErrEmptyCurrencySource, err)
+	})
+
+	t.Run("empty rates", func(t *testing.T) {
+		_, err := NewRateCalculator(baseCurrency, currencies, map[string]float64{})
+		assert.Equal(t, ErrEmptyCurrencySource, err)
+	})
 }
 
-func TestCalculateRate(t *testing.T) {
-	t.Parallel()
-
-	testCases := []struct {
-		name      string
-		base      string
-		from      string
-		to        string
-		expected  decimal.Decimal
-		shouldErr bool
-	}{
+func TestCalculateExchangeRate(t *testing.T) {
+	baseCurrency := "USD"
+	currencies := []CurrencyInfo{
 		{
-			name:     "Same currency conversion",
-			base:     "USD",
-			from:     "USD",
-			to:       "USD",
-			expected: decimal.NewFromInt(1),
+			Code:             "USD",
+			SpreadMarginBuy:  decimal.NewFromFloat(0.01), // 1% buy spread
+			SpreadMarginSell: decimal.NewFromFloat(0.01), // 1% sell spread
+			Precision:        2,
 		},
 		{
-			name:     "Base currency to target currency conversion",
-			base:     "USD",
-			from:     "USD",
-			to:       "EUR",
-			expected: decimal.NewFromFloat(1.18),
+			Code:             "EUR",
+			SpreadMarginBuy:  decimal.NewFromFloat(0.02),  // 2% buy spread
+			SpreadMarginSell: decimal.NewFromFloat(0.015), // 1.5% sell spread
+			Precision:        2,
 		},
 		{
-			name:     "Target currency to base currency conversion",
-			base:     "USD",
-			from:     "EUR",
-			to:       "USD",
-			expected: decimal.NewFromFloat(1.18),
-		},
-		{
-			name:     "Cross-rate conversion",
-			base:     "USD",
-			from:     "EUR",
-			to:       "JPY",
-			expected: decimal.NewFromFloat(145.24),
-		},
-		{
-			name:      "Non-existent base currency",
-			base:      "ZZZ",
-			from:      "USD",
-			to:        "EUR",
-			shouldErr: true,
-		},
-		{
-			name:      "Non-existent from currency",
-			base:      "USD",
-			from:      "ZZZ",
-			to:        "EUR",
-			shouldErr: true,
-		},
-		{
-			name:      "Non-existent to currency",
-			base:      "USD",
-			from:      "EUR",
-			to:        "ZZZ",
-			shouldErr: true,
+			Code:             "GBP",
+			SpreadMarginBuy:  decimal.NewFromFloat(0.015), // 1.5% buy spread
+			SpreadMarginSell: decimal.NewFromFloat(0.02),  // 2% sell spread
+			Precision:        2,
 		},
 	}
-
-	// Test currencies
-	currencies := []Currency{
-		{Code: "USD", Precision: 2, RateBuy: decimal.NewFromFloat(1.0), RateSell: decimal.NewFromFloat(1.0)},
-		{Code: "EUR", Precision: 2, RateBuy: decimal.NewFromFloat(0.85), RateSell: decimal.NewFromFloat(1.18)},
-		{Code: "JPY", Precision: 2, RateBuy: decimal.NewFromFloat(0.0081), RateSell: decimal.NewFromFloat(123.45)},
+	rates := map[string]float64{
+		"USD": 1.0,
+		"EUR": 0.85, // 1 USD = 0.85 EUR
+		"GBP": 0.75, // 1 USD = 0.75 GBP
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			actualRate, err := calculateRate(currencies, tc.base, tc.from, tc.to)
-
-			if tc.shouldErr {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
-
-			assert.Equal(t, tc.expected.String(), actualRate.RoundCeil(2).String())
-			assert.True(t, tc.expected.Equal(actualRate.RoundCeil(2)))
-		})
-	}
-}
-
-func TestNewQuote_ValidInput(t *testing.T) {
-	t.Parallel()
-
-	// Set up test data
-	var (
-		rateSource = []Currency{
-			{Code: "USD", Precision: 2, RateBuy: decimal.NewFromInt(1), RateSell: decimal.NewFromInt(1)},
-			{Code: "EUR", Precision: 2, RateBuy: decimal.NewFromFloat(0.95), RateSell: decimal.NewFromFloat(0.95)},
-		}
-		baseCurrency = "USD"
-		fromCurrency = "USD"
-		toCurrency   = "EUR"
-		fromAmount   = decimal.NewFromFloat(100)
-		fee          = decimal.NewFromFloat(5)
-	)
-
-	rate, err := calculateRate(rateSource, baseCurrency, fromCurrency, toCurrency)
+	rc, err := NewRateCalculator(baseCurrency, currencies, rates)
 	assert.NoError(t, err)
 
-	want := &Quote{
-		BaseCurrency: baseCurrency,
-		FromCurrency: fromCurrency,
-		FromAmount:   fromAmount,
-		Fee:          fee,
-		GrossAmount:  fromAmount.Add(fee),
-		Rate:         rate,
-		ToCurrency:   toCurrency,
-		ToAmount:     decimal.NewFromFloat(95),
-		Date:         time.Time{},
-	}
+	t.Run("base to foreign currency", func(t *testing.T) {
+		rate, err := rc.CalculateExchangeRate("USD", "EUR")
+		assert.NoError(t, err)
 
-	// Call the function
-	got, err := NewQuote(rateSource, baseCurrency, fromCurrency, toCurrency, fromAmount, fee)
-	assert.NoError(t, err)
-	assert.Equal(t, want.BaseCurrency, got.BaseCurrency)
-	assert.Equal(t, want.FromCurrency, got.FromCurrency)
-	assert.Equal(t, want.FromAmount, got.FromAmount)
-	assert.Equal(t, want.Fee, got.Fee)
-	assert.Equal(t, want.GrossAmount, got.GrossAmount)
-	assert.Equal(t, want.Rate, got.Rate)
-	assert.Equal(t, want.ToCurrency, got.ToCurrency)
-	assert.Equal(t, want.ToAmount.String(), got.ToAmount.String())
+		// Expected mid rate: 0.85
+		// Buy rate (customer buys EUR): mid * (1 + 0.02) = 0.85 * 1.02 = 0.867
+		expectedBuy := decimal.NewFromFloat(0.867)
+		assert.True(t, rate.BuyRate.Equal(expectedBuy), "expected %s, got %s", expectedBuy, rate.BuyRate)
+
+		// Sell rate not applicable for base to foreign
+	})
+
+	t.Run("foreign to base currency", func(t *testing.T) {
+		rate, err := rc.CalculateExchangeRate("EUR", "USD")
+		assert.NoError(t, err)
+
+		// Expected mid rate: 1/0.85 = ~1.17647
+		// Sell rate (customer sells EUR): mid * (1 - 0.015) = 1.17647 * 0.985 ≈ 1.15882
+		expectedSell := decimal.NewFromFloat(1.15882)
+		assert.True(t, rate.SellRate.Equal(expectedSell.Round(5)), "expected %s, got %s", expectedSell, rate.SellRate)
+	})
+
+	t.Run("cross currency conversion", func(t *testing.T) {
+		rate, err := rc.CalculateExchangeRate("EUR", "GBP")
+		assert.NoError(t, err)
+
+		// Expected mid rate: (1/0.85) * 0.75 ≈ 0.88235
+		// Buy rate: mid * (1 + 0.015) ≈ 0.88235 * 1.015 ≈ 0.89558
+		// Sell rate: mid * (1 - 0.015) ≈ 0.88235 * 0.985 ≈ 0.86911
+		expectedBuy := decimal.NewFromFloat(0.89558)
+		expectedSell := decimal.NewFromFloat(0.86911)
+		assert.True(t, rate.BuyRate.Equal(expectedBuy.Round(5)), "expected %s, got %s", expectedBuy, rate.BuyRate)
+		assert.True(t, rate.SellRate.Equal(expectedSell.Round(5)), "expected %s, got %s", expectedSell, rate.SellRate)
+	})
+
+	t.Run("same currency", func(t *testing.T) {
+		_, err := rc.CalculateExchangeRate("USD", "USD")
+		assert.Equal(t, ErrSameCurrency, err)
+	})
+
+	t.Run("invalid currency", func(t *testing.T) {
+		_, err := rc.CalculateExchangeRate("USD", "XYZ")
+		assert.ErrorContains(t, err, "currency not found: XYZ")
+	})
+
+	t.Run("missing rate", func(t *testing.T) {
+		_, err := rc.CalculateExchangeRate("USD", "EUR")
+		assert.NoError(t, err) // Should pass since EUR rate exists
+
+		// Add test with missing rate
+		badRc, _ := NewRateCalculator(baseCurrency, currencies, map[string]float64{"USD": 1.0})
+		_, err = badRc.CalculateExchangeRate("USD", "EUR")
+		assert.ErrorContains(t, err, "rate for EUR not found")
+	})
 }
 
-func TestNewQuote_EmptyRateSource(t *testing.T) {
-	t.Parallel()
+func TestGetSimpleRate(t *testing.T) {
+	baseCurrency := "USD"
+	currencies := []CurrencyInfo{{Code: "USD"}, {Code: "EUR"}}
+	rates := map[string]float64{
+		"USD": 1.0,
+		"EUR": 0.85,
+	}
 
-	quote, err := NewQuote(nil, "USD", "USD", "EUR", decimal.NewFromInt(100), decimal.NewFromInt(5))
-	assert.Error(t, err)
-	assert.Nil(t, quote)
+	rc, err := NewRateCalculator(baseCurrency, currencies, rates)
+	assert.NoError(t, err)
+
+	t.Run("existing currency", func(t *testing.T) {
+		rate, err := rc.GetSimpleRate("EUR")
+		assert.NoError(t, err)
+		assert.True(t, rate.Equal(decimal.NewFromFloat(0.85)))
+	})
+
+	t.Run("non-existent currency", func(t *testing.T) {
+		_, err := rc.GetSimpleRate("GBP")
+		assert.ErrorContains(t, err, "currency not found: GBP")
+	})
+}
+
+func TestNewQuote(t *testing.T) {
+	currencies := []CurrencyInfo{
+		{
+			Code:             "USD",
+			Precision:        2,
+			SpreadMarginBuy:  decimal.NewFromFloat(0.01),
+			SpreadMarginSell: decimal.NewFromFloat(0.01),
+		},
+		{
+			Code:             "EUR",
+			Precision:        2,
+			SpreadMarginBuy:  decimal.NewFromFloat(0.02),
+			SpreadMarginSell: decimal.NewFromFloat(0.015),
+		},
+	}
+	rates := map[string]float64{
+		"USD": 1.0,
+		"EUR": 0.85,
+	}
+
+	t.Run("successful fixed fee quote", func(t *testing.T) {
+		quote, err := NewQuote(
+			currencies,
+			rates,
+			"USD",
+			"USD",
+			"EUR",
+			decimal.NewFromFloat(100),
+			decimal.NewFromFloat(5),
+			NewQuoteFeeTypeFixed,
+		)
+		assert.NoError(t, err)
+		assert.Equal(t, "USD", quote.FromCurrency)
+		assert.Equal(t, "EUR", quote.ToCurrency)
+		assert.Equal(t, decimal.NewFromFloat(100), quote.FromAmount)
+		assert.Equal(t, decimal.NewFromFloat(5), quote.Fee)
+		assert.True(t, quote.ToAmount.GreaterThan(decimal.Zero))
+		assert.Equal(t, NewQuoteFeeTypeFixed, quote.Metadata["feeType"])
+	})
+
+	t.Run("successful percentage fee quote", func(t *testing.T) {
+		quote, err := NewQuote(
+			currencies,
+			rates,
+			"USD",
+			"USD",
+			"EUR",
+			decimal.NewFromFloat(100),
+			decimal.NewFromFloat(1), // 1%
+			NewQuoteFeeTypePercentage,
+		)
+		assert.NoError(t, err)
+		assert.Equal(t, decimal.NewFromFloat(1), quote.Fee)
+		assert.Equal(t, NewQuoteFeeTypePercentage, quote.Metadata["feeType"])
+	})
+
+	t.Run("invalid fee type", func(t *testing.T) {
+		_, err := NewQuote(
+			currencies,
+			rates,
+			"USD",
+			"USD",
+			"EUR",
+			decimal.NewFromFloat(100),
+			decimal.NewFromFloat(1),
+			"invalid",
+		)
+		assert.ErrorContains(t, err, "invalid fee type")
+	})
+
+	t.Run("negative fee", func(t *testing.T) {
+		_, err := NewQuote(
+			currencies,
+			rates,
+			"USD",
+			"USD",
+			"EUR",
+			decimal.NewFromFloat(100),
+			decimal.NewFromFloat(-1),
+			NewQuoteFeeTypeFixed,
+		)
+		assert.ErrorContains(t, err, "fee cannot be negative")
+	})
+
+	t.Run("invalid currency pair", func(t *testing.T) {
+		_, err := NewQuote(
+			currencies,
+			rates,
+			"USD",
+			"",
+			"EUR",
+			decimal.NewFromFloat(100),
+			decimal.NewFromFloat(1),
+			NewQuoteFeeTypeFixed,
+		)
+		assert.Equal(t, ErrInvalidCurrencyPair, err)
+	})
+
+	t.Run("currency not found", func(t *testing.T) {
+		_, err := NewQuote(
+			currencies,
+			rates,
+			"USD",
+			"USD",
+			"GBP", // Not in our test data
+			decimal.NewFromFloat(100),
+			decimal.NewFromFloat(1),
+			NewQuoteFeeTypeFixed,
+		)
+		assert.ErrorContains(t, err, "currency not found: GBP")
+	})
+
+	t.Run("fee exceeds amount", func(t *testing.T) {
+		quote, err := NewQuote(
+			currencies,
+			rates,
+			"USD",
+			"USD",
+			"EUR",
+			decimal.NewFromFloat(100),
+			decimal.NewFromFloat(150), // Fixed fee > amount
+			NewQuoteFeeTypeFixed,
+		)
+		assert.NoError(t, err)
+		assert.True(t, quote.Fee.Equal(decimal.NewFromFloat(100)))
+		assert.True(t, quote.ToAmount.Equal(decimal.Zero))
+	})
+}
+
+//====
+
+func TestFindCurrencyInfo(t *testing.T) {
+	// Setup test data
+	testCurrencies := []CurrencyInfo{
+		{
+			Code:      "USD",
+			Name:      "US Dollar",
+			Symbol:    "$",
+			Precision: 2,
+		},
+		{
+			Code:      "EUR",
+			Name:      "Euro",
+			Symbol:    "€",
+			Precision: 2,
+		},
+		{
+			Code:      "JPY",
+			Name:      "Japanese Yen",
+			Symbol:    "¥",
+			Precision: 0,
+		},
+	}
+
+	t.Run("successful find - exact match", func(t *testing.T) {
+		currency, err := FindCurrencyInfo(testCurrencies, "USD")
+		assert.NoError(t, err)
+		assert.Equal(t, "USD", currency.Code)
+		assert.Equal(t, "US Dollar", currency.Name)
+	})
+
+	t.Run("successful find - case insensitive", func(t *testing.T) {
+		currency, err := FindCurrencyInfo(testCurrencies, "eur")
+		assert.NoError(t, err)
+		assert.Equal(t, "EUR", currency.Code)
+		assert.Equal(t, "Euro", currency.Name)
+	})
+
+	t.Run("successful find - with whitespace", func(t *testing.T) {
+		currency, err := FindCurrencyInfo(testCurrencies, "  jpy  ")
+		assert.NoError(t, err)
+		assert.Equal(t, "JPY", currency.Code)
+		assert.Equal(t, "Japanese Yen", currency.Name)
+	})
+
+	t.Run("currency not found", func(t *testing.T) {
+		_, err := FindCurrencyInfo(testCurrencies, "GBP")
+		assert.Error(t, err)
+		assert.Equal(t, "currency not found: GBP", err.Error())
+	})
+
+	t.Run("empty currency code", func(t *testing.T) {
+		_, err := FindCurrencyInfo(testCurrencies, "")
+		assert.Error(t, err)
+		assert.Equal(t, ErrCurrencyNotFound, errors.Unwrap(err))
+	})
+
+	t.Run("empty currencies list", func(t *testing.T) {
+		_, err := FindCurrencyInfo([]CurrencyInfo{}, "USD")
+		assert.Error(t, err)
+		assert.Equal(t, "currency not found: USD", err.Error())
+	})
+
+	t.Run("verify copy not reference", func(t *testing.T) {
+		// Get the original and found currency
+		originalIndex := 1 // EUR
+		original := testCurrencies[originalIndex]
+		found, err := FindCurrencyInfo(testCurrencies, "EUR")
+		assert.NoError(t, err)
+
+		// Modify the found currency
+		found.Name = "Modified Euro"
+
+		// Verify original wasn't changed
+		assert.Equal(t, "Euro", testCurrencies[originalIndex].Name)
+		assert.Equal(t, "Modified Euro", found.Name)
+		assert.NotSame(t, &original, found)
+	})
 }
