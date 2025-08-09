@@ -27,46 +27,27 @@ type DebitTransaction struct {
 	TransactionCategory   TransactionCategory `json:"transactionCategory"`
 }
 
-// TransactionRecord provides a complete audit record of a transaction
-type TransactionRecord struct {
-	TransactionID          string              `json:"transactionId"`          // Unique identifier
-	WalletID               string              `json:"walletId"`               // Affected wallet
-	CurrencyCode           string              `json:"currencyCode"`           // Currency type
-	InitiatorID            string              `json:"initiatorId"`            // Who initiated
-	ExternalTransactionRef string              `json:"externalTransactionRef"` // External reference
-	TransactionCategory    TransactionCategory `json:"transactionCategory"`    // Transaction type
-	Description            string              `json:"description"`            // Human-readable context
-	Amount                 decimal.Decimal     `json:"amount"`                 // Principal amount
-	Fee                    decimal.Decimal     `json:"fee"`                    // Applied fee
-	TransactionType        TransactionType     `json:"transactionType"`        // Credit/Debit
-	BalanceBefore          decimal.Decimal     `json:"balanceBefore"`          // Pre-transaction balance
-	BalanceAfter           decimal.Decimal     `json:"balanceAfter"`           // Post-transaction balance
-	CreatedAt              time.Time           `json:"createdAt"`              // When initiated
-	UpdatedAt              time.Time           `json:"updatedAt"`              // Last updated
-	Status                 TransactionStatus   `json:"status"`                 // Current state
-}
-
 // Credit adds funds to the wallet and returns a detailed transaction record
-func (w *Wallet) Credit(tx CreditTransaction) (*TransactionRecord, error) {
+func (w *Wallet) Credit(tx CreditTransaction) (*TransactionHistory, error) {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 
 	// Prepare initial transaction result
-	result := &TransactionRecord{
-		TransactionID:          uuid.New().String(),
-		WalletID:               w.ID,
-		CurrencyCode:           w.CurrencyCode,
-		InitiatorID:            tx.InitiatorID,
-		ExternalTransactionRef: tx.ExternalTransactionID,
-		TransactionCategory:    tx.TransactionCategory,
-		Description:            tx.Description,
-		Amount:                 tx.Amount,
-		Fee:                    tx.Fee,
-		TransactionType:        TypeCredit,
-		BalanceBefore:          w.AvailableBalance,
-		CreatedAt:              time.Now(),
-		UpdatedAt:              time.Now(),
-		Status:                 StatusPending,
+	result := &TransactionHistory{
+		ID:                uuid.New().String(),
+		WalletID:          w.ID,
+		CurrencyCode:      w.CurrencyCode,
+		InitiatorID:       tx.InitiatorID,
+		ExternalReference: tx.ExternalTransactionID,
+		Category:          tx.TransactionCategory,
+		Description:       tx.Description,
+		Amount:            tx.Amount,
+		Fee:               tx.Fee,
+		Type:              TypeCredit,
+		BalanceBefore:     w.AvailableBalance,
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
+		Status:            StatusPending,
 	}
 
 	// Validate wallet state
@@ -109,26 +90,26 @@ func (w *Wallet) Credit(tx CreditTransaction) (*TransactionRecord, error) {
 }
 
 // Debit removes funds from the wallet and returns a detailed transaction record
-func (w *Wallet) Debit(tx DebitTransaction) (*TransactionRecord, error) {
+func (w *Wallet) Debit(tx DebitTransaction) (*TransactionHistory, error) {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 
 	// Prepare initial transaction result
-	result := &TransactionRecord{
-		TransactionID:          uuid.New().String(),
-		WalletID:               w.ID,
-		CurrencyCode:           w.CurrencyCode,
-		InitiatorID:            tx.InitiatorID,
-		ExternalTransactionRef: tx.ExternalTransactionID,
-		TransactionCategory:    tx.TransactionCategory,
-		Description:            tx.Description,
-		Amount:                 tx.Amount,
-		Fee:                    tx.Fee,
-		TransactionType:        TypeDebit,
-		BalanceBefore:          w.AvailableBalance,
-		CreatedAt:              time.Now(),
-		UpdatedAt:              time.Now(),
-		Status:                 StatusPending,
+	result := &TransactionHistory{
+		ID:                uuid.New().String(),
+		WalletID:          w.ID,
+		CurrencyCode:      w.CurrencyCode,
+		InitiatorID:       tx.InitiatorID,
+		ExternalReference: tx.ExternalTransactionID,
+		Category:          tx.TransactionCategory,
+		Description:       tx.Description,
+		Amount:            tx.Amount,
+		Fee:               tx.Fee,
+		Type:              TypeDebit,
+		BalanceBefore:     w.AvailableBalance,
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
+		Status:            StatusPending,
 	}
 
 	// Validate wallet state

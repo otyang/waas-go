@@ -72,11 +72,11 @@ type TransactionHistory struct {
 	// BalanceAfter is the wallet's available balance after the transaction
 	BalanceAfter decimal.Decimal `json:"balanceAfter"`
 
-	// InitiatedAt is when the transaction was first requested
-	InitiatedAt time.Time `json:"initiatedAt"`
+	// CreatedAt is when the transaction was first requested
+	CreatedAt time.Time `json:"initiatedAt"`
 
 	// CompletedAt is when the transaction was finalized
-	CompletedAt time.Time `json:"completedAt"`
+	UpdatedAt time.Time `json:"completedAt"`
 
 	// Status indicates the final disposition of the transaction
 	Status TransactionStatus `json:"status"`

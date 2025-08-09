@@ -81,15 +81,15 @@ func GenerateAccountStatement(wallet *Wallet, transactions []TransactionHistory,
 	var filteredTx []TransactionHistory
 	for _, tx := range transactions {
 		// Include transactions within date range (inclusive)
-		if (tx.InitiatedAt.Equal(startDate) || tx.InitiatedAt.After(startDate)) &&
-			(tx.InitiatedAt.Equal(endDate) || tx.InitiatedAt.Before(endDate)) {
+		if (tx.CreatedAt.Equal(startDate) || tx.CreatedAt.After(startDate)) &&
+			(tx.CreatedAt.Equal(endDate) || tx.CreatedAt.Before(endDate)) {
 			filteredTx = append(filteredTx, tx)
 		}
 	}
 
 	// Sort by initiation time (oldest first)
 	sort.Slice(filteredTx, func(i, j int) bool {
-		return filteredTx[i].InitiatedAt.Before(filteredTx[j].InitiatedAt)
+		return filteredTx[i].CreatedAt.Before(filteredTx[j].CreatedAt)
 	})
 
 	// Process transactions to build statement lines and summary
@@ -121,7 +121,7 @@ func GenerateAccountStatement(wallet *Wallet, transactions []TransactionHistory,
 
 		// Prepare statement line
 		stmt := TransactionStatement{
-			Date:        tx.InitiatedAt.Format(timeLayout), // Use consistent date format
+			Date:        tx.CreatedAt.Format(timeLayout), // Use consistent date format
 			Description: tx.Description,
 			Balance:     formatDecimal(tx.BalanceAfter),
 			Fee:         formatDecimal(tx.Fee),

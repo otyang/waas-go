@@ -55,7 +55,7 @@ func (w *Wallet) Transfer(dest *Wallet, req TransferRequest) (*TransactionHistor
 		Fee:               req.Fee,
 		Type:              TypeDebit,
 		BalanceBefore:     w.AvailableBalance,
-		InitiatedAt:       now,
+		CreatedAt:         now,
 		Status:            StatusPending,
 	}
 
@@ -71,7 +71,7 @@ func (w *Wallet) Transfer(dest *Wallet, req TransferRequest) (*TransactionHistor
 		Fee:               decimal.Zero, // Fees only apply to source
 		Type:              TypeCredit,
 		BalanceBefore:     dest.AvailableBalance,
-		InitiatedAt:       now,
+		CreatedAt:         now,
 		Status:            StatusPending,
 	}
 
@@ -116,9 +116,9 @@ func validateTransfer(source, dest *Wallet, req TransferRequest) error {
 func markFailed(source, dest *TransactionHistory) {
 	now := time.Now()
 	source.Status = StatusFailed
-	source.CompletedAt = now
+	source.UpdatedAt = now
 	dest.Status = StatusFailed
-	dest.CompletedAt = now
+	dest.UpdatedAt = now
 }
 
 // completeTransfer finalizes successful transactions
@@ -126,15 +126,14 @@ func completeTransfer(source, dest *TransactionHistory, sourceBal, destBal decim
 	now := time.Now()
 	source.BalanceAfter = sourceBal
 	source.Status = StatusCompleted
-	source.CompletedAt = now
+	source.UpdatedAt = now
 
 	dest.BalanceAfter = destBal
 	dest.Status = StatusCompleted
-	dest.CompletedAt = now
+	dest.UpdatedAt = now
 }
 
-// ========================================
-// =============== swap
+// ======= swap
 
 // SwapRequest represents a currency swap operation between wallets
 type SwapRequest struct {
@@ -196,7 +195,7 @@ func (w *Wallet) Swap(dest *Wallet, req SwapRequest) (*TransactionHistory, *Tran
 		Fee:               req.Fee,
 		Type:              TypeDebit,
 		BalanceBefore:     w.AvailableBalance,
-		InitiatedAt:       now,
+		CreatedAt:         now,
 		Status:            StatusPending,
 	}
 
@@ -212,7 +211,7 @@ func (w *Wallet) Swap(dest *Wallet, req SwapRequest) (*TransactionHistory, *Tran
 		Fee:               decimal.Zero, // Fees only apply to source
 		Type:              TypeCredit,
 		BalanceBefore:     dest.AvailableBalance,
-		InitiatedAt:       now,
+		CreatedAt:         now,
 		Status:            StatusPending,
 	}
 
