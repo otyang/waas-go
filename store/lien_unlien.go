@@ -8,7 +8,7 @@ import (
 	"github.com/otyang/waas-go/types"
 	"github.com/uptrace/bun"
 )
-think the lien parameter
+
 // ProcessLien handles both placing and releasing liens in a single atomic operation
 func (r *WalletRepository) ProcessLien(
 	ctx context.Context,
@@ -16,7 +16,6 @@ func (r *WalletRepository) ProcessLien(
 	request types.LienOrUnlienRequest,
 	operationType string, // "lien" or "unlien"
 ) (*types.LienRecord, *types.Wallet, error) {
-
 	var (
 		lienRecord *types.LienRecord
 		wallet     *types.Wallet
@@ -71,7 +70,6 @@ func (r *WalletRepository) ProcessLien(
 
 		return nil
 	})
-
 	if err != nil {
 		return nil, nil, fmt.Errorf("%s processing failed: %w", operationType, err)
 	}

@@ -21,7 +21,7 @@ func setUp() *bun.DB {
 		log.Fatal(err)
 	}
 
-	if _, err = NewWithMigration(db); err != nil {
+	if _, err = dbstore.NewWithMigration(db); err != nil {
 		log.Fatal(err)
 	}
 
@@ -36,12 +36,4 @@ func tearDown(db *bun.DB) {
 			log.Fatal(err)
 		}
 	}
-}
-
-func createTestRandomWallet(customerID, currencyCode string) *types.Wallet {
-	return types.NewWallet(customerID, currencyCode)
-}
-
-func toPointer[T any](v T) *T {
-	return &v
 }

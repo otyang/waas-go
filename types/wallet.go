@@ -11,20 +11,20 @@ import (
 
 // Wallet holds funds for a customer with thread-safe operations
 type Wallet struct {
-	ID                string          `json:"id"`                     // Unique ID
-	CustomerID        string          `json:"customerId"`             // Owner ID
-	AvailableBalance  decimal.Decimal `json:"availableBalance"`       // Spendable amount
-	LienBalance       decimal.Decimal `json:"lienBalance"`            // Reserved amount
-	CurrencyCode      string          `json:"currencyCode"`           // Currency type (USD, EUR etc.)
-	IsClosed          bool            `json:"isClosed"`               // Closed flag
-	Frozen            bool            `json:"frozen"`                 // Frozen flag
-	FreezeReason      string          `json:"freezeReason,omitempty"` // Freeze Reason
-	FreezeInitiatedBy string          `json:"freezeInitiatedBy"`
-	FrozenAt          time.Time       `json:"frozenAt"`
-	CreatedAt         time.Time       `json:"createdAt"` // Creation time
-	UpdatedAt         time.Time       `json:"updatedAt"` // Last update time
-	VersionId         string          `json:"-"`         // For concurrency control
-	mutex             sync.RWMutex    `json:"-"`         // Thread safety
+	ID                string          `json:"id" bun:"id,pk"`                                      // Unique ID
+	CustomerID        string          `json:"customerId" bun:",notnull"`                           // Owner ID
+	AvailableBalance  decimal.Decimal `json:"availableBalance" bun:"type:decimal(24,8),notnull"  ` // Spendable amount
+	LienBalance       decimal.Decimal `json:"lienBalance" bun:"type:decimal(24,8),notnull"`        // Reserved amount
+	CurrencyCode      string          `json:"currencyCode" bun:",notnull"`                         // Currency type (USD, EUR etc.)
+	IsClosed          bool            `json:"isClosed" bun:",default:false"`                       // Closed flag
+	Frozen            bool            `json:"frozen" bun:",default:false"`                         // Frozen flag
+	FreezeReason      string          `json:"freezeReason" bun:",nullzero"`                        // Freeze Reason
+	FreezeInitiatedBy string          `json:"freezeInitiatedBy" bun:",nullzero"`                   // Who initiated freeze
+	FrozenAt          time.Time       `json:"frozenAt" bun:",notnull"`                             // Freeze timestamp
+	CreatedAt         time.Time       `json:"createdAt" bun:",notnull"`                            // Creation time
+	UpdatedAt         time.Time       `json:"updatedAt" bun:",notnull"`                            // Last update time
+	VersionId         string          `json:"-" bun:",notnull"`                                    // For concurrency control
+	mutex             sync.RWMutex    `json:"-" bun:"-"`                                           // Thread safety (ignored by bun)
 }
 
 // NewWallet creates and initializes a new Wallet instance

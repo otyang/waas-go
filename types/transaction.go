@@ -35,52 +35,23 @@ const (
 	StatusPending   TransactionStatus = "PENDING"   // Awaiting processing
 )
 
-// TransactionHistory contains the complete record of a wallet transaction
+// TransactionHistory contains a wallet transaction record
 type TransactionHistory struct {
-	// ID is the unique identifier for this transaction record
-	ID string `json:"id"`
-
-	// WalletID identifies the wallet involved in the transaction
-	WalletID string `json:"walletId"`
-
-	// CurrencyCode specifies the wallet's currency at time of transaction
-	CurrencyCode string `json:"currencyCode"`
-
-	// InitiatorID identifies who initiated the transaction
-	InitiatorID string `json:"initiatorId"`
-
-	// ExternalReference is a reference ID from an external system
-	ExternalReference string `json:"externalReference"`
-
-	// Category classifies the type of transaction
-	Category TransactionCategory `json:"category"`
-
-	// Description provides human-readable context for the transaction
-	Description string `json:"description"`
-
-	// Amount is the principal value moved in this transaction
-	Amount decimal.Decimal `json:"amount"`
-
-	// Fee is the processing fee deducted (if any)
-	Fee decimal.Decimal `json:"fee"`
-
-	// Type indicates the direction of funds (credit/debit)
-	Type TransactionType `json:"type"`
-
-	// BalanceBefore is the wallet's available balance before the transaction
-	BalanceBefore decimal.Decimal `json:"balanceBefore"`
-
-	// BalanceAfter is the wallet's available balance after the transaction
-	BalanceAfter decimal.Decimal `json:"balanceAfter"`
-
-	// CreatedAt is when the transaction was first requested
-	CreatedAt time.Time `json:"initiatedAt"`
-
-	// CompletedAt is when the transaction was finalized
-	UpdatedAt time.Time `json:"completedAt"`
-
-	// Status indicates the final disposition of the transaction
-	Status TransactionStatus `json:"status"`
+	ID                string              `json:"id" bun:",pk"`                                    // Unique transaction ID
+	WalletID          string              `json:"walletId" bun:",notnull"`                         // Associated wallet ID
+	CurrencyCode      string              `json:"currencyCode" bun:",notnull"`                     // Transaction currency
+	InitiatorID       string              `json:"initiatorId" bun:",notnull"`                      // Who initiated the transaction
+	ExternalReference string              `json:"externalReference" bun:",notnull"`                // External system reference
+	Category          TransactionCategory `json:"category" bun:",notnull"`                         // Transaction type/category
+	Description       string              `json:"description" bun:",notnull"`                      // Transaction description
+	Amount            decimal.Decimal     `json:"amount" bun:",type:decimal(24,8),notnull"`        // Transaction amount
+	Fee               decimal.Decimal     `json:"fee" bun:",type:decimal(24,8),notnull"`           // Processing fee
+	Type              TransactionType     `json:"type" bun:",notnull"`                             // Credit/Debit
+	BalanceBefore     decimal.Decimal     `json:"balanceBefore" bun:",type:decimal(24,8),notnull"` // Pre-transaction balance
+	BalanceAfter      decimal.Decimal     `json:"balanceAfter" bun:",type:decimal(24,8),notnull"`  // Post-transaction balance
+	CreatedAt         time.Time           `json:"initiatedAt" bun:",notnull"`                      // Creation timestamp
+	UpdatedAt         time.Time           `json:"completedAt" bun:",notnull"`                      // Completion timestamp
+	Status            TransactionStatus   `json:"status" bun:",notnull"`                           // Transaction status
 }
 
 // Transaction status transition errors

@@ -10,43 +10,44 @@ import (
 
 const timeLayout = "02-Jan-2006"
 
-type (
-	AccountStatement struct {
-		AccountName          string `json:"accountName"`
-		AccountNumber        string `json:"accountNumberOrID"`
-		AccountHolderAddress string `json:"accountHolderAddress"`
-		AccountCurrency      string `json:"accountCurrency"`
-		AccountOpened        string `json:"accountOpened"`
-		IsAccountFrozen      bool   `json:"isFrozen"`
-		IsAccountClosed      bool   `json:"isClosed"`
-		DatePrinted          string `json:"datePrinted"`
-		CurrentBalance       string `json:"currentBalance"`
-		StartDate            time.Time
-		EndDate              time.Time
-		Summary              AnalyticsSummary       `json:"summary"`
-		Transactions         []TransactionStatement `json:"transactions"`
-	}
+// AccountStatement represents a comprehensive financial statement for a wallet account
+type AccountStatement struct {
+	AccountName          string                 `json:"accountName"`          // Display name of the account/wallet
+	AccountNumber        string                 `json:"accountNumberOrID"`    // Unique identifier for the account
+	AccountHolderAddress string                 `json:"accountHolderAddress"` // Physical/digital address of account holder
+	AccountCurrency      string                 `json:"accountCurrency"`      // Currency code (e.g., "USD", "EUR")
+	AccountOpened        string                 `json:"accountOpened"`        // Date when account was created (formatted)
+	IsAccountFrozen      bool                   `json:"isFrozen"`             // Whether account is currently frozen
+	IsAccountClosed      bool                   `json:"isClosed"`             // Whether account is closed
+	DatePrinted          string                 `json:"datePrinted"`          // When this statement was generated
+	CurrentBalance       string                 `json:"currentBalance"`       // Formatted current available balance
+	StartDate            time.Time              `json:"createdAt"`            // Start of reporting period (raw)
+	EndDate              time.Time              `json:"updatedAt"`            // End of reporting period (raw)
+	Summary              AnalyticsSummary       `json:"summary"`              // Financial summary for period
+	Transactions         []TransactionStatement `json:"transactions"`         // Detailed transaction records
+}
 
-	AnalyticsSummary struct {
-		OpeningBalance        decimal.Decimal `json:"openingBalance"`
-		ClosingBalance        decimal.Decimal `json:"closingBalance"`
-		TotalTransactionCount int             `json:"totalTransactionCount"`
-		TotalCreditCount      int             `json:"totalCreditCount"`
-		TotalDebitCount       int             `json:"totalDebitCount"`
-		TotalCreditAmount     decimal.Decimal `json:"totalCredit"`
-		TotalDebitAmount      decimal.Decimal `json:"totalDebit"`
-		TotalFee              decimal.Decimal `json:"totalFee"`
-	}
+// AnalyticsSummary provides aggregated financial data for the statement period
+type AnalyticsSummary struct {
+	OpeningBalance        decimal.Decimal `json:"openingBalance"`        // Balance at period start
+	ClosingBalance        decimal.Decimal `json:"closingBalance"`        // Balance at period end
+	TotalTransactionCount int             `json:"totalTransactionCount"` // Number of transactions
+	TotalCreditCount      int             `json:"totalCreditCount"`      // Number of credit transactions
+	TotalDebitCount       int             `json:"totalDebitCount"`       // Number of debit transactions
+	TotalCreditAmount     decimal.Decimal `json:"totalCredit"`           // Sum of all credits
+	TotalDebitAmount      decimal.Decimal `json:"totalDebit"`            // Sum of all debits
+	TotalFee              decimal.Decimal `json:"totalFee"`              // Sum of all fees charged
+}
 
-	TransactionStatement struct {
-		Date        string `json:"date"`
-		Description string `json:"description"`
-		Credit      string `json:"credit"`
-		Debit       string `json:"debit"`
-		Fee         string `json:"fee"`
-		Balance     string `json:"balance"`
-	}
-)
+// TransactionStatement represents a single transaction line in the account statement
+type TransactionStatement struct {
+	Date        string `json:"date"`        // Formatted transaction date
+	Description string `json:"description"` // Transaction purpose/memo
+	Credit      string `json:"credit"`      // Formatted credit amount (empty if debit)
+	Debit       string `json:"debit"`       // Formatted debit amount (empty if credit)
+	Fee         string `json:"fee"`         // Formatted transaction fee
+	Balance     string `json:"balance"`     // Formatted balance after transaction
+}
 
 // GenerateAccountStatement creates a comprehensive account statement for a given wallet
 // including transaction history and analytics summary within a specified date range.

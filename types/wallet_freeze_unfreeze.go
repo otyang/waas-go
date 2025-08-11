@@ -2,95 +2,52 @@ package types
 
 import (
 	"time"
-
-	"github.com/google/uuid"
 )
 
 // FreezeRequest contains details for freezing a wallet
 type FreezeRequest struct {
-	Reason      string `json:"reason"`      // Reason for freezing
-	InitiatedBy string `json:"initiatedBy"` // Who requested the freeze
-	ReferenceID string `json:"referenceId"` // External reference ID
+	Reason      string    `json:"reason"`      // Reason for freezing
+	InitiatedBy string    `json:"initiatedBy"` // Who requested the freeze
+	FrozenAt    time.Time `json:"frozenAt"`    // When the freeze was applied
 }
 
-// FreezeResult contains information about the freeze operation
-type FreezeResult struct {
-	WalletID  string    `json:"walletId"`  // Frozen wallet ID
-	FreezeID  string    `json:"freezeId"`  // Unique freeze operation ID
-	FrozenAt  time.Time `json:"frozenAt"`  // When freeze was applied
-	Reason    string    `json:"reason"`    // Freeze reason
-	ExpiresAt time.Time `json:"expiresAt"` // When freeze will auto-expire
-}
-
-// Freeze locks a wallet from all debit transactions while allowing credits
-func (w *Wallet) Freeze(req FreezeRequest) (*FreezeResult, error) {
+func (w *Wallet) Freeze(req FreezeRequest) error {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 
 	if w.IsClosed {
-		return nil, ErrWalletClosed
+		return ErrWalletClosed
 	}
 	if w.Frozen {
-		return nil, ErrWalletAlreadyFrozen
+		return ErrWalletAlreadyFrozen
 	}
 
 	w.Frozen = true
 	w.FreezeReason = req.Reason
 	w.FreezeInitiatedBy = req.InitiatedBy
-	freezeTime := time.Now()
-	w.FrozenAt = freezeTime
-	w.UpdatedAt = freezeTime
+	w.FrozenAt = req.FrozenAt
+	w.UpdatedAt = time.Now()
 
-	return &FreezeResult{
-		WalletID: w.ID,
-		FreezeID: uuid.New().String(),
-		FrozenAt: freezeTime,
-		Reason:   req.Reason,
-	}, nil
-}
-
-// UnfreezeRequest contains details for unfreezing a wallet
-type UnfreezeRequest struct {
-	Reason      string `json:"reason"`      // Reason for unfreezing
-	InitiatedBy string `json:"initiatedBy"` // Who requested the unfreeze
-	ReferenceID string `json:"referenceId"` // External reference ID
-}
-
-// UnfreezeResult contains information about the unfreeze operation
-type UnfreezeResult struct {
-	WalletID       string        `json:"walletId"`       // Unfrozen wallet ID
-	UnfreezeID     string        `json:"unfreezeId"`     // Unique unfreeze operation ID
-	UnfrozenAt     time.Time     `json:"unfrozenAt"`     // When unfreeze was applied
-	Reason         string        `json:"reason"`         // Unfreeze reason
-	FreezeDuration time.Duration `json:"freezeDuration"` // How long wallet was frozen
+	return nil
 }
 
 // Unfreeze removes all transaction restrictions from a wallet
-func (w *Wallet) Unfreeze(req UnfreezeRequest) (*UnfreezeResult, error) {
+func (w *Wallet) Unfreeze() error {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 
 	if !w.Frozen {
-		return nil, ErrWalletNotFrozen
+		return ErrWalletNotFrozen
 	}
-
-	unfreezeTime := time.Now()
-	freezeDuration := unfreezeTime.Sub(w.FrozenAt)
 
 	// Clear all freeze-related fields
 	w.Frozen = false
 	w.FreezeReason = ""
 	w.FreezeInitiatedBy = ""
 	w.FrozenAt = time.Time{}
-	w.UpdatedAt = unfreezeTime
+	w.UpdatedAt = time.Now()
 
-	return &UnfreezeResult{
-		WalletID:       w.ID,
-		UnfreezeID:     uuid.New().String(),
-		UnfrozenAt:     unfreezeTime,
-		Reason:         req.Reason,
-		FreezeDuration: freezeDuration,
-	}, nil
+	return nil
 }
 
 // IsFrozen checks if wallet is currently frozen
@@ -100,17 +57,25 @@ func (w *Wallet) IsFrozen() bool {
 	return w.Frozen
 }
 
+// FreezeInfo contains information about the freeze operation
+type FreezeInfo struct {
+	WalletID    string    `json:"walletId"`          // Frozen wallet ID
+	IsFrozen    bool      `json:"isFrozen"`          // Frozen flag
+	Reason      string    `json:"freezeReason"`      // Freeze reason
+	InitiatedBy string    `json:"freezeInitiatedBy"` // Who initiated the freeze
+	FrozenAt    time.Time `json:"frozenAt"`          // When the freeze was applied
+}
+
 // GetFreezeInfo returns current freeze status
-func (w *Wallet) GetFreezeInfo() *FreezeResult {
+func (w *Wallet) GetFreezeInfo() *FreezeInfo {
 	w.mutex.RLock()
 	defer w.mutex.RUnlock()
 
-	if !w.Frozen {
-		return nil
-	}
-	return &FreezeResult{
-		WalletID: w.ID,
-		FrozenAt: w.FrozenAt,
-		Reason:   w.FreezeReason,
+	return &FreezeInfo{
+		WalletID:    w.ID,
+		IsFrozen:    w.Frozen,
+		Reason:      w.FreezeReason,
+		InitiatedBy: w.FreezeInitiatedBy,
+		FrozenAt:    w.FrozenAt,
 	}
 }
