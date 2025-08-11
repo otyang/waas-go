@@ -1,4 +1,4 @@
-package account
+package store
 
 import (
 	"context"

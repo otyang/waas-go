@@ -7,13 +7,13 @@ import (
 )
 
 type Client struct {
-	Account   *account.Client
+	Account   *account.WalletRepository
 	Presenter *presenter.Client
 }
 
 func New(db *bun.DB) *Client {
 	return &Client{
-		Account:   account.New(db),
+		Account:   account.NewWalletRepository(db), change name from walletrepository to newREPOSITORY
 		Presenter: presenter.New(),
 	}
 }
