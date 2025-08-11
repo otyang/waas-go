@@ -61,8 +61,8 @@ type (
 // Returns:
 //   - AccountStatement containing formatted statement data
 func GenerateAccountStatement(wallet *Wallet, transactions []TransactionHistory,
-	startDate, endDate time.Time, precision int32) AccountStatement {
-
+	startDate, endDate time.Time, precision int32,
+) AccountStatement {
 	// Helper function to format decimal values with consistent precision
 	formatDecimal := func(d decimal.Decimal) string {
 		return d.Round(precision).StringFixed(precision)

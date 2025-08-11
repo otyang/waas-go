@@ -1,36 +1,17 @@
 package account
 
 import (
-	"context"
-
-	"github.com/otyang/waas-go/types"
 	"github.com/uptrace/bun"
 )
 
-type Client struct {
+type WalletRepository struct {
 	db bun.IDB
 }
 
-func New(db *bun.DB) *Client {
-	return &Client{db: db}
+func NewWalletRepository(db *bun.DB) *WalletRepository {
+	return &WalletRepository{db: db}
 }
 
-func (a *Client) NewWithTx(tx bun.Tx) *Client {
-	return &Client{db: tx}
-}
-
-func NewWithMigration(db *bun.DB) (*Client, error) {
-	ctx := context.Background()
-
-	_, err := db.NewCreateTable().Model((*types.Transaction)(nil)).IfNotExists().Exec(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = db.NewCreateTable().Model((*types.Wallet)(nil)).IfNotExists().Exec(ctx)
-	if err != nil {
-		return nil, err
-	}
-	_, err = db.NewCreateTable().Model((*types.Currency)(nil)).IfNotExists().Exec(ctx)
-	return New(db), err
+func (a *WalletRepository) NewWithTx(tx bun.Tx) *WalletRepository {
+	return &WalletRepository{db: tx}
 }
