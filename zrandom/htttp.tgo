@@ -1,0 +1,125 @@
+package handler
+
+import (
+	"context"
+	"log/slog"
+	"net/http"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/otyang/go-pkg/datastore"
+	"github.com/otyang/yasante/svc_wallet/config"
+	"github.com/otyang/yasante/svc_wallet/internal/entity"
+	bunrepo "github.com/otyang/yasante/svc_wallet/internal/repository/bun"
+)
+
+type Server struct {
+	log    *slog.Logger
+	config *config.Config
+	repo   entity.IRepository
+	app    *fiber.App
+}
+
+// NewServer creates a new HTTP server instance
+func NewServer(log *slog.Logger, config *config.Config, repo entity.IRepository) *Server {
+	server := &Server{
+		log:    log,
+		config: config,
+		repo:   repo,
+		app:    fiber.New(fiberConfig(config)),
+	}
+
+	server.setupRoutes()
+	return server
+}
+
+// fiberConfig returns Fiber configuration based on app config
+func fiberConfig(cfg *config.Config) fiber.Config {
+	return fiber.Config{
+		AppName:               "Wallet Service",
+		DisableStartupMessage: !cfg.App.Debug,
+		ErrorHandler:          errorHandler,
+	}
+}
+
+// errorHandler centralizes error handling for all routes
+func errorHandler(c *fiber.Ctx, err error) error {
+	code := fiber.StatusInternalServerError
+	message := "Internal Server Error"
+
+	if e, ok := err.(*fiber.Error); ok {
+		code = e.Code
+		message = e.Message
+	}
+
+	return c.Status(code).JSON(fiber.Map{
+		"success": false,
+		"error":   message,
+	})
+}
+
+// setupRoutes configures all HTTP routes
+func (s *Server) setupRoutes() {
+	api := s.app.Group("/api")
+	v1 := api.Group("/v1")
+
+	wallet := v1.Group("/wallets")
+	wallet.Get("/", s.listWallets)
+	wallet.Get("/transactions", s.listTransactions)
+
+	// Health check endpoint
+	s.app.Get("/health", s.healthCheck)
+}
+
+// Start begins listening for HTTP requests
+func (s *Server) Start() error {
+	s.log.Info("starting HTTP server", "address", s.config.App.Address)
+	return s.app.Listen(s.config.App.Address)
+}
+
+// Shutdown gracefully stops the HTTP server
+func (s *Server) Shutdown(ctx context.Context) error {
+	s.log.Info("shutting down HTTP server")
+	return s.app.ShutdownWithContext(ctx)
+}
+
+// RegisterHttpHandlers initializes and starts the HTTP server
+func RegisterHttpHandlers(ctx context.Context, cfg *config.Config, log *slog.Logger, db datastore.OrmDB) {
+	repo := bunrepo.NewRepository(db, cfg)
+	server := NewServer(log, cfg, repo)
+
+	go func() {
+		if err := server.Start(); err != nil {
+			log.Error("failed to start HTTP server", "error", err)
+		}
+	}()
+
+	// Handle graceful shutdown
+	<-ctx.Done()
+	if err := server.Shutdown(context.Background()); err != nil {
+		log.Error("failed to shutdown HTTP server", "error", err)
+	}
+}
+
+// healthCheck handles health check requests
+func (s *Server) healthCheck(c *fiber.Ctx) error {
+	return c.JSON(fiber.Map{
+		"status":  "available",
+		"version": s.config.App.Version,
+	})
+}
+
+// listWallets handles GET /wallets requests
+func (s *Server) listWallets(c *fiber.Ctx) error {
+	// Implement your wallet listing logic here
+	return c.Status(http.StatusNotImplemented).JSON(fiber.Map{
+		"message": "Endpoint not implemented yet",
+	})
+}
+
+// listTransactions handles GET /wallets/transactions requests
+func (s *Server) listTransactions(c *fiber.Ctx) error {
+	// Implement your transaction listing logic here
+	return c.Status(http.StatusNotImplemented).JSON(fiber.Map{
+		"message": "Endpoint not implemented yet",
+	})
+}
